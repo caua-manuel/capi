@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { criarCategoriaPropria, montarCategorias, type Categoria, type Grupo } from './dominio/categorias';
 import { apagarCategoriaPropria, gravarEscondidas, lerEscondidas, listarCategoriasProprias, salvarCategoriaPropria } from './repositorio/categorias';
 import { Categorias } from './telas/Categorias';
+import { CHAVE_MODO_DISCRETO, ProvedorDiscreto } from './telas/discreto';
+import { gravarAjuste, lerAjuste } from './repositorio/ajustes';
 import type { Lancamento } from './dominio/lancamento';
 import type { RegrasDeEstabelecimento } from './leitor/leitor';
 import { lerUrlDeEntrada } from './leitor/url';
@@ -35,6 +37,18 @@ export function App() {
   const [proprias, setProprias] = useState<Categoria[]>([]);
   const [escondidas, setEscondidas] = useState<string[]>([]);
   const { todas, visiveis } = useMemo(() => montarCategorias(proprias, escondidas), [proprias, escondidas]);
+  // Nulo enquanto lê a escolha salva: os valores ficam escondidos até lá, para não piscar em público.
+  const [discreto, setDiscreto] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    void lerAjuste<boolean>(CHAVE_MODO_DISCRETO).then((salvo) => setDiscreto(salvo ?? false));
+  }, []);
+
+  async function alternarDiscreto() {
+    const novo = !discreto;
+    setDiscreto(novo);
+    await gravarAjuste(CHAVE_MODO_DISCRETO, novo);
+  }
 
   useEffect(() => {
     // Depois de ler a URL de entrada, o endereço volta para a Início.
@@ -94,7 +108,7 @@ export function App() {
   const fechar = useCallback(() => setFolha(null), []);
 
   return (
-    <>
+    <ProvedorDiscreto ligado={discreto !== false}>
       {rota === 'ajustes' && <Ajustes />}
       {rota === 'atalho' && <Atalho />}
       {rota === 'categorias' && (
@@ -102,7 +116,7 @@ export function App() {
           onCriar={(nome, grupo) => void criarCategoria(nome, grupo)} onRenomear={renomearCategoria} onApagar={apagarCategoria} />
       )}
       {(rota === 'inicio' || rota === 'lancar') && (
-        <Inicio mes={mes} lancamentos={lancamentos} categorias={todas} onAjustes={() => navegar('ajustes')}
+        <Inicio mes={mes} lancamentos={lancamentos} categorias={todas} onAjustes={() => navegar('ajustes')} onAlternarDiscreto={alternarDiscreto}
           onLancar={() => setFolha({ tipo: 'novo' })} onEditar={(l) => setFolha({ tipo: 'editar', lancamento: l })} />
       )}
       {folha && (
@@ -112,6 +126,6 @@ export function App() {
           preenchimento={folha.tipo === 'novo' ? folha.preenchimento : undefined}
           onSalvar={salvar} onApagar={apagar} onFechar={fechar} />
       )}
-    </>
+    </ProvedorDiscreto>
   );
 }

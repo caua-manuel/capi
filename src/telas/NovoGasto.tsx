@@ -5,7 +5,8 @@ import { normalizar } from '../leitor/normalizar';
 import type { Lancamento, OrigemDoLancamento } from '../dominio/lancamento';
 import { lerLancamento, type RegrasDeEstabelecimento } from '../leitor/leitor';
 import { Icone } from '../componentes/Icone';
-import { centavosParaTexto, formatarReais, hoje, rotuloDaData } from './formato';
+import { Valor, useModoDiscreto } from './discreto';
+import { centavosParaTexto, hoje, rotuloDaData } from './formato';
 
 export interface PreenchimentoDoGasto {
   texto: string;
@@ -28,6 +29,8 @@ interface Props {
 
 export function NovoGasto({ categorias, regras, editando, preenchimento, onSalvar, onApagar, onFechar, onCriarCategoria }: Props) {
   const [criandoCategoria, setCriandoCategoria] = useState(false);
+  const discreto = useModoDiscreto();
+  const [focado, setFocado] = useState(false);
   const [texto, setTexto] = useState(
     editando ? `${editando.loja} ${centavosParaTexto(editando.valor)}` : (preenchimento?.texto ?? ''),
   );
@@ -89,7 +92,7 @@ export function NovoGasto({ categorias, regras, editando, preenchimento, onSalva
         <div style={{ textAlign: 'center' }}>
           <img className="capi" src={`${import.meta.env.BASE_URL}capi/capi-joinha.png`} alt="" style={{ height: 92, margin: '0 auto 4px' }} />
           <div className="num valor-grande" aria-live="polite">
-            {leitura.valor !== null ? formatarReais(leitura.valor) : 'R$ 0,00'}
+            <Valor centavos={leitura.valor ?? 0} />
           </div>
           <div className="texto-2" style={{ marginTop: 8 }}>
             {leitura.loja || 'Escreva a loja e o valor'} · {rotuloDaData(data)}
@@ -99,6 +102,8 @@ export function NovoGasto({ categorias, regras, editando, preenchimento, onSalva
         <label htmlFor="texto-do-gasto" className="so-leitor">Escreva o gasto, por exemplo ifood 42</label>
         <div className="campo">
           <input id="texto-do-gasto" ref={campo} value={texto} onChange={(e) => setTexto(e.target.value)}
+            className={discreto && !focado ? 'texto-escondido' : undefined}
+            onFocus={() => setFocado(true)} onBlur={() => setFocado(false)}
             placeholder="ifood 42 ou pix joão 50" autoComplete="off" autoCapitalize="none" enterKeyHint="done"
             onKeyDown={(e) => e.key === 'Enter' && salvar()} />
           {leitura.valor !== null && <span className="entendi">entendi</span>}

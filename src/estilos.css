@@ -194,6 +194,7 @@ a { color: var(--bl); text-decoration: none; }
 .campo { height: 52px; padding: 0 16px; border-radius: 26px; background: var(--sf2); display: flex; align-items: center; gap: 10px; }
 .campo input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-size: 17px; padding: 0; }
 .campo input::placeholder { color: var(--tx3); }
+.texto-escondido { -webkit-text-security: disc; }
 .entendi { color: var(--bl); font-size: 13px; font-weight: 600; }
 .chips {
   display: grid; grid-template-rows: repeat(2, 44px); grid-auto-flow: column; grid-auto-columns: max-content;
