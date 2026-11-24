@@ -1,0 +1,83 @@
+/* Tokens do DESIGN.md. Tema claro e escuro seguem o aparelho. */
+:root {
+  --bg: #F1F3F7; --sf: #FFFFFF; --sf2: #EEF1F6;
+  --tx: #0D1730; --tx2: #454F64; --tx3: #535E74; --ln: #E6EAF1;
+  --hero1: #1E2E57; --hero2: #0B1530; --herotx2: #AFBCD8; --herodestaque: #A9C2FA;
+  --ice1: #E3ECFC; --ice2: #CCDCF7; --icetx: #0D1730;
+  --bl: #2E5BDB; --bl2: #7F9EEA; --blsf: #E6EDFC;
+  --ok: #147A4C; --oksf: #E2F4EA; --warn: #94600A; --warnsf: #FBF0DA; --bad: #9E302A; --badsf: #FBE6E3;
+  --scrim: rgba(13, 23, 48, .38);
+  --sh: 0 1px 2px rgba(13, 23, 48, .04), 0 10px 28px rgba(13, 23, 48, .07);
+  --sh-destaque: 0 16px 34px rgba(11, 21, 48, .28);
+  --glass: rgba(255, 255, 255, .78);
+  --fonte-texto: -apple-system, "SF Pro Text", Inter, system-ui, sans-serif;
+  --fonte-titulo: -apple-system, "SF Pro Display", Inter, system-ui, sans-serif;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #080C17; --sf: #121A2C; --sf2: #1A2338;
+    --tx: #EEF2FA; --tx2: #9CA8C0; --tx3: #8792AA; --ln: #212B42;
+    --hero1: #2A3E74; --hero2: #121D3E; --herotx2: #B4C2E2; --herodestaque: #A9C2FA;
+    --ice1: #1C2B4F; --ice2: #16223F; --icetx: #EEF2FA;
+    --bl: #8FAAFF; --bl2: #5B7BD8; --blsf: #1B2848;
+    --ok: #5FD69A; --oksf: #10291F; --warn: #F0C25C; --warnsf: #33280F; --bad: #FF8C80; --badsf: #371917;
+    --scrim: rgba(0, 0, 0, .55);
+    --sh: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 28px rgba(0, 0, 0, .35);
+    --glass: rgba(18, 26, 44, .78);
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); }
+body {
+  color: var(--tx); font-family: var(--fonte-texto); font-size: 15px; line-height: 1.45;
+  -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:active, a:active, .tocavel:active { transform: scale(.97); }
+a { color: var(--bl); text-decoration: none; }
+:focus-visible { outline: 2px solid var(--bl); outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; letter-spacing: -0.025em; }
+.so-leitor { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.tela {
+  max-width: 430px; margin: 0 auto; min-height: 100dvh;
+  padding: calc(env(safe-area-inset-top) + 16px) 0 calc(env(safe-area-inset-bottom) + 130px);
+}
+.titulo-grande { font-family: var(--fonte-titulo); font-size: 28px; font-weight: 600; line-height: 1.12; letter-spacing: -0.025em; margin: 0; }
+.titulo { font-size: 17px; font-weight: 600; line-height: 1.3; letter-spacing: -0.01em; margin: 0; }
+.rotulo { font-size: 12px; font-weight: 500; line-height: 1.3; color: var(--tx2); }
+.texto-2 { color: var(--tx2); }
+
+.cartao { margin: 12px 16px 0; padding: 18px; border-radius: 26px; background: var(--sf); box-shadow: var(--sh); }
+.cartao-destaque {
+  margin: 12px 16px 0; padding: 20px 22px; border-radius: 28px; color: #FFFFFF;
+  background: linear-gradient(160deg, var(--hero1), var(--hero2)); box-shadow: var(--sh-destaque);
+}
+.cartao-destaque .sub { color: var(--herotx2); font-size: 13px; }
+
+.botao-principal {
+  height: 64px; padding: 0 12px 0 22px; border-radius: 32px; border: none; width: 100%;
+  background: var(--hero2); color: #FFFFFF; font-weight: 600; font-size: 16px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.botao-principal .seta {
+  width: 40px; height: 40px; border-radius: 20px; background: #FFFFFF; color: #0D1730;
+  display: flex; align-items: center; justify-content: center;
+}
+.botao-principal:disabled { opacity: .45; }
+.botao-secundario {
+  height: 64px; border-radius: 32px; border: none; width: 100%;
+  background: var(--sf); color: var(--tx); font-weight: 600; font-size: 16px; box-shadow: var(--sh);
+}
+.chip {
+  height: 44px; padding: 0 16px; border-radius: 22px; border: none;
+  background: var(--sf2); color: var(--tx); font-weight: 500; font-size: 14px;
+}
+.chip[aria-pressed="true"] { background: var(--hero2); color: #FFFFFF; }
+.chip-novo { background: transparent; border: 1.5px dashed var(--bl2); color: var(--bl); font-weight: 600; }
+
+.capi { display: block; width: auto; }
