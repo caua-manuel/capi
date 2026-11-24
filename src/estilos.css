@@ -82,6 +82,41 @@ a { color: var(--bl); text-decoration: none; }
 
 .capi { display: block; width: auto; }
 
+.botao-redondo {
+  width: 44px; height: 44px; border-radius: 22px; border: none; background: var(--sf); color: var(--tx);
+  box-shadow: var(--sh); display: flex; align-items: center; justify-content: center;
+}
+.icone-redondo {
+  width: 44px; height: 44px; flex: none; border-radius: 22px; background: var(--blsf); color: var(--bl);
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Telas de detalhe: cabeçalho marinho e folha arredondada por cima */
+.tela-detalhe { padding-top: 0; }
+.cabecalho {
+  min-height: 250px; padding: calc(env(safe-area-inset-top) + 12px) 22px 52px; color: #FFFFFF;
+  background: linear-gradient(160deg, var(--hero1), var(--hero2));
+}
+.botao-voltar {
+  width: 44px; height: 44px; margin-left: -10px; border: none; border-radius: 22px; background: rgba(255, 255, 255, .12);
+  color: #FFFFFF; display: flex; align-items: center; justify-content: center;
+}
+.cabecalho-linha { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 24px; }
+.folha-conteudo {
+  position: relative; margin-top: -30px; min-height: 60dvh; padding: 22px 16px 0; border-radius: 30px 30px 0 0; background: var(--bg);
+}
+.passos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.passo { margin: 0; display: flex; gap: 14px; }
+.passo-numero {
+  width: 32px; height: 32px; flex: none; border-radius: 16px; background: var(--hero2); color: #FFFFFF;
+  display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px;
+}
+.modelo-url { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.modelo-url code {
+  display: block; width: 100%; padding: 10px 12px; border-radius: 14px; background: var(--sf2);
+  font-size: 12px; line-height: 1.5; word-break: break-all;
+}
+
 /* Lista de Lançamentos */
 .lista ul { list-style: none; margin: 0; padding: 0; }
 .lista li + li { border-top: 1px solid var(--ln); }

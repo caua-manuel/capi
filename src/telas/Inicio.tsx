@@ -10,9 +10,10 @@ interface Props {
   categorias: readonly Categoria[];
   onLancar: () => void;
   onEditar: (lancamento: Lancamento) => void;
+  onAjustes: () => void;
 }
 
-export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar }: Props) {
+export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAjustes }: Props) {
   const total = lancamentos.reduce((soma, l) => soma + l.valor, 0);
   const nomeDaCategoria = (id: string) => categorias.find((c) => c.id === id)?.nome ?? 'Outros';
   const base = import.meta.env.BASE_URL;
@@ -23,6 +24,11 @@ export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar }: Pro
         <header style={{ padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <img src={`${base}apple-touch-icon.png`} alt="Capi" width={44} height={44}
             style={{ borderRadius: 11, boxShadow: '0 2px 8px rgba(11,21,48,.18)' }} />
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button type="button" className="botao-redondo" aria-label="Ajustes" onClick={onAjustes}>
+              <Icone nome="ajustes" />
+            </button>
+          </div>
         </header>
 
         <div style={{ padding: '14px 22px 0' }}>
