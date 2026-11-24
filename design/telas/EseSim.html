@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Capi · Simulador E se</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""><link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.t-claro{--bg:#F1F3F7;--sf:#FFFFFF;--sf2:#EEF1F6;--tx:#0D1730;--tx2:#454F64;--tx3:#535E74;--ln:#E6EAF1;--hero1:#1E2E57;--hero2:#0B1530;--herotx:#FFFFFF;--herotx2:#AFBCD8;--ice1:#E3ECFC;--ice2:#CCDCF7;--icetx:#0D1730;--bl:#2E5BDB;--bl2:#7F9EEA;--blsf:#E6EDFC;--ok:#147A4C;--oksf:#E2F4EA;--warn:#94600A;--warnsf:#FBF0DA;--bad:#9E302A;--badsf:#FBE6E3;--scrim:rgba(13,23,48,.38);--sh:0 1px 2px rgba(13,23,48,.04),0 10px 28px rgba(13,23,48,.07);--glass:rgba(255,255,255,.78)}
+.t-escuro{--bg:#080C17;--sf:#121A2C;--sf2:#1A2338;--tx:#EEF2FA;--tx2:#9CA8C0;--tx3:#8792AA;--ln:#212B42;--hero1:#2A3E74;--hero2:#121D3E;--herotx:#FFFFFF;--herotx2:#B4C2E2;--ice1:#1C2B4F;--ice2:#16223F;--icetx:#EEF2FA;--bl:#8FAAFF;--bl2:#5B7BD8;--blsf:#1B2848;--ok:#5FD69A;--oksf:#10291F;--warn:#F0C25C;--warnsf:#33280F;--bad:#FF8C80;--badsf:#371917;--scrim:rgba(0,0,0,.55);--sh:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.35);--glass:rgba(18,26,44,.78)}
+.num{font-variant-numeric:tabular-nums;letter-spacing:-0.025em}
+a{color:var(--bl);text-decoration:none}a:hover{text-decoration:underline}
+button{font-family:inherit;cursor:pointer}
+button:active,a:active{transform:scale(.97)}
+input,textarea{font-family:inherit}
+</style>
+</helmet>
+<div class="{{temaClass}}" style="width: 390px; height: 880px; box-sizing: border-box; position: relative; overflow: hidden; background: var(--bg); color: var(--tx); font-family: -apple-system, &quot;SF Pro Text&quot;, Inter, system-ui, sans-serif; font-size: 15px; line-height: 1.45; -webkit-font-smoothing: antialiased">
+
+<div style="position: absolute; left: 0; right: 0; top: 0; height: 330px; background: linear-gradient(165deg, var(--hero1), var(--hero2)); color: #FFFFFF"><div style="display: flex; justify-content: space-between; padding: 58px 20px 0"><a href="Metas.dc.html" aria-label="Voltar" style="width: 44px; height: 44px; border-radius: 22px; border: none; background: rgba(255,255,255,.14); color: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a></div><h1 style="margin: 18px 24px 0; font-size: 28px; line-height: 1.12; font-weight: 600; letter-spacing: -0.025em">E se…<br/><span style="color: #A9C2FA">a viagem chegasse antes?</span></h1><div style="margin: 18px 24px 0"><div style="font-size: 13px; color: var(--herotx2)">Viagem chega em</div><div style="font-size: 42px; font-weight: 600; letter-spacing: -0.035em">{{data}}</div><span style="display: inline-block; margin-top: 4px; padding: 6px 12px; border-radius: 14px; background: #FFFFFF; color: #0D1730; font-weight: 600; font-size: 13px">{{delta}}</span></div></div>
+<div style="position: absolute; left: 0; right: 0; top: 300px; bottom: 0; border-radius: 30px 30px 0 0; background: var(--bg); padding: 18px 16px 0; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px">
+<div style="padding: 18px; border-radius: 26px; background: var(--sf); box-shadow: var(--sh); "><div style="padding: 6px 0"><div style="display: flex; justify-content: space-between; font-size: 15px"><label for="corte" style="font-weight: 500">Cortar de delivery</label><span class="num" style="font-weight: 600">{{corteTxt}}</span></div><input id="corte" type="range" min="0" max="400" step="20" value="{{corte}}" onInput="{{setCorte}}" style="width: 100%; accent-color: #2E5BDB; margin-top: 10px"/></div><div style="height: 1px; background: var(--ln); margin: 8px 0"></div><div style="padding: 6px 0"><div style="display: flex; justify-content: space-between; font-size: 15px"><label for="extra" style="font-weight: 500">Guardar a mais</label><span class="num" style="font-weight: 600">{{extraTxt}}</span></div><input id="extra" type="range" min="0" max="600" step="50" value="{{extra}}" onInput="{{setExtra}}" style="width: 100%; accent-color: #2E5BDB; margin-top: 10px"/></div><div style="height: 1px; background: var(--ln); margin: 8px 0"></div><div style="padding: 6px 0"><div style="display: flex; justify-content: space-between; font-size: 15px"><label for="custo" style="font-weight: 500">Custo da viagem</label><span class="num" style="font-weight: 600">{{custoTxt}}</span></div><input id="custo" type="range" min="3000" max="9000" step="250" value="{{custo}}" onInput="{{setCusto}}" style="width: 100%; accent-color: #2E5BDB; margin-top: 10px"/></div></div>
+<div style="padding: 16px 18px; border-radius: 24px; background: linear-gradient(180deg, var(--ice1), var(--ice2)); color: var(--icetx); display: flex; justify-content: space-between; align-items: center"><span style="font-size: 14px; color: var(--tx2)">Aporte da viagem</span><span class="num" style="font-size: 22px; font-weight: 600">{{aporte}}/mês</span></div>
+</div>
+<div style="position: absolute; left: 16px; right: 16px; bottom: 26px"><a href="Metas.dc.html" style="height: 64px; padding: 0 12px 0 22px; border-radius: 32px; background: var(--hero2); color: #FFFFFF; font-weight: 600; font-size: 16px; display: flex; align-items: center; justify-content: space-between; text-decoration: none">Aplicar ao plano<span style="width: 40px; height: 40px; border-radius: 20px; background: #FFFFFF; color: #0D1730; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span></a></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tema": {"editor": "enum", "options": ["claro", "escuro"], "default": "claro"}, "$preview": {"width": 390, "height": 880}}'>
+class Component extends DCLogic {
+  constructor(props){ super(props); this.state = { corte: 200, extra: 0, custo: 6000 }; }
+
+  renderVals() {
+    const tema = this.props.tema ?? 'claro';
+    const temaClass = tema === 'escuro' ? 't-escuro' : 't-claro';
+    const {corte,extra,custo}=this.state; const fmt=v=>'R$ '+v.toLocaleString('pt-BR');
+    const ap=545+corte+extra; const meses=Math.max(1,Math.ceil((custo-2180)/ap)); const d=new Date(2026,11+meses,1);
+    const nomes=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']; const diff=Math.ceil((6000-2180)/545)-meses;
+    const vv = { corte, extra, custo, corteTxt: fmt(corte)+'/mês', extraTxt: fmt(extra)+'/mês', custoTxt: fmt(custo),
+      setCorte: e=>this.setState({corte:+e.target.value}), setExtra: e=>this.setState({extra:+e.target.value}), setCusto: e=>this.setState({custo:+e.target.value}),
+      data: nomes[d.getMonth()]+'/'+d.getFullYear(), aporte: fmt(ap), delta: diff>0? diff+(diff>1?' meses':' mês')+' antes' : diff<0? (-diff)+(diff<-1?' meses':' mês')+' depois' : 'mesma data de hoje' };
+    return { temaClass, ...vv };
+  }
+}
+</script>
+</body>
+</html>

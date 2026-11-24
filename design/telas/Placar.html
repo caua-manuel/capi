@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Capi · Placar do mês</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""><link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.t-claro{--bg:#F1F3F7;--sf:#FFFFFF;--sf2:#EEF1F6;--tx:#0D1730;--tx2:#454F64;--tx3:#535E74;--ln:#E6EAF1;--hero1:#1E2E57;--hero2:#0B1530;--herotx:#FFFFFF;--herotx2:#AFBCD8;--ice1:#E3ECFC;--ice2:#CCDCF7;--icetx:#0D1730;--bl:#2E5BDB;--bl2:#7F9EEA;--blsf:#E6EDFC;--ok:#147A4C;--oksf:#E2F4EA;--warn:#94600A;--warnsf:#FBF0DA;--bad:#9E302A;--badsf:#FBE6E3;--scrim:rgba(13,23,48,.38);--sh:0 1px 2px rgba(13,23,48,.04),0 10px 28px rgba(13,23,48,.07);--glass:rgba(255,255,255,.78)}
+.t-escuro{--bg:#080C17;--sf:#121A2C;--sf2:#1A2338;--tx:#EEF2FA;--tx2:#9CA8C0;--tx3:#8792AA;--ln:#212B42;--hero1:#2A3E74;--hero2:#121D3E;--herotx:#FFFFFF;--herotx2:#B4C2E2;--ice1:#1C2B4F;--ice2:#16223F;--icetx:#EEF2FA;--bl:#8FAAFF;--bl2:#5B7BD8;--blsf:#1B2848;--ok:#5FD69A;--oksf:#10291F;--warn:#F0C25C;--warnsf:#33280F;--bad:#FF8C80;--badsf:#371917;--scrim:rgba(0,0,0,.55);--sh:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.35);--glass:rgba(18,26,44,.78)}
+.num{font-variant-numeric:tabular-nums;letter-spacing:-0.025em}
+a{color:var(--bl);text-decoration:none}a:hover{text-decoration:underline}
+button{font-family:inherit;cursor:pointer}
+button:active,a:active{transform:scale(.97)}
+input,textarea{font-family:inherit}
+</style>
+</helmet>
+<div class="{{temaClass}}" style="width: 390px; height: 960px; box-sizing: border-box; position: relative; overflow: hidden; background: var(--bg); color: var(--tx); font-family: -apple-system, &quot;SF Pro Text&quot;, Inter, system-ui, sans-serif; font-size: 15px; line-height: 1.45; -webkit-font-smoothing: antialiased">
+
+<div style="position: absolute; left: 0; right: 0; top: 0; height: 330px; background: linear-gradient(165deg, var(--hero1), var(--hero2)); color: #FFFFFF"><div style="display: flex; justify-content: space-between; padding: 58px 20px 0"><a href="Fechamento.dc.html" aria-label="Voltar" style="width: 44px; height: 44px; border-radius: 22px; border: none; background: rgba(255,255,255,.14); color: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a></div><h1 style="margin: 18px 24px 0; font-size: 28px; line-height: 1.12; font-weight: 600; letter-spacing: -0.025em">Dezembro<br/><span style="color: #A9C2FA">fechado</span></h1><div style="position: absolute; right: 2px; bottom: 26px"><img src="../capi/capi-festa.png" alt="" style="height: 160px; width: auto; display: block; "/></div><div style="margin: 18px 24px 0"><div class="num" style="font-size: 42px; font-weight: 600; letter-spacing: -0.035em">5 de 7</div><div style="font-size: 14px; color: var(--herotx2)">categorias dentro do teto</div></div></div>
+<div style="position: absolute; left: 0; right: 0; top: 300px; bottom: 0; border-radius: 30px 30px 0 0; background: var(--bg); padding: 18px 16px 0; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px">
+<div style="padding: 18px; border-radius: 26px; background: linear-gradient(180deg, var(--ice1), var(--ice2)); color: var(--icetx)"><div style="font-size: 13px; color: var(--tx2)">Dinheiro salvo abaixo do teto</div><div class="num" style="font-size: 34px; font-weight: 600; margin: 2px 0 6px">R$ 180</div><div style="font-size: 14px">Como aporte, a viagem chega <b>1 semana antes</b>.</div>
+<a href="Metas.dc.html" style="margin-top: 14px; height: 48px; padding: 0 8px 0 18px; border-radius: 24px; background: var(--hero2); color: #FFFFFF; font-weight: 600; display: flex; align-items: center; justify-content: space-between; text-decoration: none">Virar aporte da viagem<span style="width: 34px; height: 34px; border-radius: 17px; background: #FFFFFF; color: #0D1730; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a></div>
+<div style="padding: 18px; border-radius: 26px; background: var(--sf); box-shadow: var(--sh); "><div style="display: flex; gap: 14px"><span style="width: 44px; height: 44px; flex: none; border-radius: 22px; background: var(--blsf); color: var(--bl); display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.5"/></svg></span><div><div style="font-weight: 600">2 assinaturas de IA parecidas</div><div style="font-size: 14px; color: var(--tx2); margin-top: 2px"><span class="num">R$ 190/mês</span>, <span class="num">R$ 2.280</span> por ano. Ainda usa as duas?</div></div></div></div>
+<div style="padding: 18px; border-radius: 26px; background: var(--sf); box-shadow: var(--sh); "><div style="display: flex; gap: 14px; align-items: center"><span style="width: 44px; height: 44px; flex: none; border-radius: 22px; background: var(--sf2); display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg></span><div style="flex: 1"><div style="font-weight: 600">Exportar backup</div><div style="font-size: 13px; color: var(--tx2)">Último há 31 dias</div></div><a href="Ajustes.dc.html" style="font-weight: 600">Exportar</a></div></div>
+</div>
+<div style="position: absolute; left: 16px; right: 16px; bottom: 26px"><a href="Home.dc.html" style="height: 64px; padding: 0 12px 0 22px; border-radius: 32px; background: var(--hero2); color: #FFFFFF; font-weight: 600; font-size: 16px; display: flex; align-items: center; justify-content: space-between; text-decoration: none">Ver plano de janeiro<span style="width: 40px; height: 40px; border-radius: 20px; background: #FFFFFF; color: #0D1730; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tema": {"editor": "enum", "options": ["claro", "escuro"], "default": "claro"}, "$preview": {"width": 390, "height": 960}}'>
+class Component extends DCLogic {
+
+  renderVals() {
+    const tema = this.props.tema ?? 'claro';
+    const temaClass = tema === 'escuro' ? 't-escuro' : 't-claro';
+const vv = {};
+    return { temaClass, ...vv };
+  }
+}
+</script>
+</body>
+</html>
