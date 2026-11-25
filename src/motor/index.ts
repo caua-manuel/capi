@@ -7,6 +7,7 @@ import { diagnosticar, type Diagnostico } from './diagnostico';
 import type { Centavos } from './dinheiro';
 import { fixosDoMes, type OcorrenciaDeFixo } from './fixos';
 import type { Parametros } from './parametros';
+import { planejar, type Plano } from './plano';
 
 /** Tudo o que o Motor precisa. As Telas leem do Repositório e passam aqui. */
 export interface EntradaDoMotor {
@@ -34,6 +35,7 @@ export interface MesDoPlano {
 export interface SaidaDoMotor {
   diagnostico: Diagnostico;
   mesDoPlano: MesDoPlano;
+  plano: Plano;
 }
 
 /** A função de entrada do Motor: puro, sem tela e sem ler nem gravar dados. */
@@ -46,5 +48,6 @@ export function calcular(e: EntradaDoMotor): SaidaDoMotor {
   const mesDoPlano: MesDoPlano = {
     mes, fixos: doMes, fixosNoCartao: doMes.filter((f) => f.forma === 'cartao'), totalDosFixos: doMes.reduce((s, f) => s + f.valor, 0),
   };
-  return { diagnostico, mesDoPlano };
+  const plano = planejar({ hoje: e.hoje, diagnostico, fixosDoMes: doMes, categorias: e.categorias, lancamentos: e.lancamentos });
+  return { diagnostico, mesDoPlano, plano };
 }

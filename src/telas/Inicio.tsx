@@ -1,6 +1,8 @@
 import type { Categoria } from '../dominio/categorias';
 import type { Lancamento } from '../dominio/lancamento';
 import { Icone } from '../componentes/Icone';
+import type { Centavos } from '../motor/dinheiro';
+import type { Plano } from '../motor/plano';
 import { Valor, useModoDiscreto } from './discreto';
 import { nomeDoMes, rotuloDaData, saudacao } from './formato';
 
@@ -16,9 +18,30 @@ interface Props {
   /** Ainda não respondeu o Onboarding. */
   semPlano: boolean;
   onMontarPlano: () => void;
+  /** Plano do Motor, quando o Onboarding já foi respondido. */
+  plano: Plano | null;
+  /** Barras de Metas para a home. */
+  metas: MetaNaHome[];
 }
 
-export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAjustes, onAlternarDiscreto, semPlano, onMontarPlano }: Props) {
+export interface MetaNaHome {
+  nome: string;
+  atual: Centavos;
+  progresso: number;
+  /** "out/2027", quando houver data prevista. */
+  data?: string;
+}
+
+/** Hora do Lançamento mais recente: até quando os números valem. */
+function atualizadoEm(lancamentos: readonly Lancamento[]): string | null {
+  const ultimo = lancamentos.reduce<string | null>((m, l) => (!m || l.criadoEm > m ? l.criadoEm : m), null);
+  if (!ultimo) return null;
+  const d = new Date(ultimo);
+  const dois = (n: number) => String(n).padStart(2, '0');
+  return `${dois(d.getDate())}/${dois(d.getMonth() + 1)}, ${dois(d.getHours())}:${dois(d.getMinutes())}`;
+}
+
+export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAjustes, onAlternarDiscreto, semPlano, onMontarPlano, plano, metas }: Props) {
   const discreto = useModoDiscreto();
   const total = lancamentos.reduce((soma, l) => soma + l.valor, 0);
   const nomeDaCategoria = (id: string) => categorias.find((c) => c.id === id)?.nome ?? 'Outros';
@@ -46,15 +69,64 @@ export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAju
           <h1 className="titulo-grande" style={{ textTransform: 'capitalize' }}>{nomeDoMes(mes)}</h1>
         </div>
 
-        <section className="cartao-destaque" style={{ marginTop: 16 }}>
-          <div className="sub">Gastos de {nomeDoMes(mes)}</div>
-          <div className="num" style={{ fontSize: 44, fontWeight: 600, lineHeight: 1.05, letterSpacing: '-0.035em', marginTop: 4 }}>
-            <Valor centavos={total} />
-          </div>
-          <div className="sub" style={{ marginTop: 2 }}>
-            {lancamentos.length === 1 ? '1 lançamento' : `${lancamentos.length} lançamentos`}
-          </div>
-        </section>
+        {plano ? (
+          <section className="cartao-destaque" style={{ marginTop: 16 }} aria-label="Quanto ainda pode gastar">
+            <div className="sub">Ainda pode gastar</div>
+            <div className="num numero-grande"><Valor centavos={plano.aindaPodeGastar} /></div>
+            <div className="sub" style={{ marginTop: 2 }}>de <Valor centavos={plano.limiteDoMes} /> em {nomeDoMes(mes)}</div>
+            <div className="linha-por-dia">
+              <span className="num"><Valor centavos={plano.porDia} />/dia</span>
+              <span className="sub">{plano.diasRestantes === 1 ? 'último dia' : `${plano.diasRestantes} dias`}</span>
+            </div>
+          </section>
+        ) : (
+          <section className="cartao-destaque" style={{ marginTop: 16 }}>
+            <div className="sub">Gastos de {nomeDoMes(mes)}</div>
+            <div className="num numero-grande"><Valor centavos={total} /></div>
+            <div className="sub" style={{ marginTop: 2 }}>
+              {lancamentos.length === 1 ? '1 lançamento' : `${lancamentos.length} lançamentos`}
+            </div>
+          </section>
+        )}
+
+        {plano && plano.tetos.length > 0 && (
+          <section className="cartao" aria-label="Tetos do mês">
+            <h2 className="titulo">Tetos de {nomeDoMes(mes)}</h2>
+            <ul className="lista-divisao">
+              {[...plano.tetos].sort((a, b) => b.uso - a.uso).slice(0, 5).map((t) => (
+                <li key={t.categoriaId}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                    <span>{nomeDaCategoria(t.categoriaId)}</span>
+                    <span className="num texto-2"><Valor centavos={t.gasto} semCentavos /> de <Valor centavos={t.teto} semCentavos /></span>
+                  </div>
+                  <div className="barra-progresso" aria-hidden="true">
+                    <div className={t.estado === 'estourado' ? 'ruim' : t.estado === 'atencao' ? 'atencao' : ''} style={{ width: `${Math.min(100, t.uso * 100)}%` }} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+        {plano?.mesSemTetos && (
+          <p className="rotulo" style={{ margin: '10px 24px 0' }}>Os Tetos por Categoria saem dos seus gastos reais, depois do primeiro mês.</p>
+        )}
+
+        {metas.length > 0 && (
+          <section className="cartao" aria-label="Metas">
+            <h2 className="titulo">Metas</h2>
+            <ul className="lista-divisao">
+              {metas.map((m) => (
+                <li key={m.nome}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                    <span>{m.nome}{m.data ? <span className="texto-2"> · {m.data}</span> : null}</span>
+                    <span className="num texto-2"><Valor centavos={m.atual} semCentavos /> · {Math.min(100, Math.round(m.progresso * 100))}%</span>
+                  </div>
+                  <div className="barra-progresso" aria-hidden="true"><div style={{ width: `${Math.min(100, m.progresso * 100)}%` }} /></div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {semPlano && (
           <section className="cartao">
@@ -93,6 +165,7 @@ export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAju
         )}
 
         <p className="rotulo" style={{ textAlign: 'center', margin: '16px 24px 0', color: 'var(--tx3)' }}>
+          {atualizadoEm(lancamentos) && <>Atualizado em {atualizadoEm(lancamentos)}.<br /></>}
           Este plano é educativo e não é recomendação de investimento.
         </p>
       </main>
