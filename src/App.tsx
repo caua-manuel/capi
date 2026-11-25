@@ -155,7 +155,7 @@ export function App() {
 
   const recarregar = useCallback(async () => {
     const [lista, r, p, e, o, rec, fx, mt, ft, ct] = await Promise.all([
-      listarLancamentosDoMes(mes), lerRegras(), listarCategoriasProprias(), lerEscondidas(), lerOnboarding(), listarLancamentosDesde(somarMeses(mes, -3)), listarFixos(), listarMetas(), listarFaturas(), lerAjuste<Cartao>('cartao'),
+      listarLancamentosDoMes(mes), lerRegras(), listarCategoriasProprias(), lerEscondidas(), lerOnboarding(), listarLancamentosDesde(somarMeses(mes, -5)), listarFixos(), listarMetas(), listarFaturas(), lerAjuste<Cartao>('cartao'),
     ]);
     setLancamentos(lista);
     setRegras(r);
@@ -415,7 +415,7 @@ export function App() {
         <PossoComprar entrada={entradaDoMotor} categorias={visiveis} onEsperar24h={guardarCompra} />
       )}
       {rota === 'fatura' && (
-        <TelaFatura previsao={saida?.previsao ?? null} cartao={cartao} categorias={todas}
+        <TelaFatura previsao={saida?.previsao ?? null} evolucao={saida?.evolucao ?? null} cartao={cartao} categorias={todas}
           onSalvarCartao={(c) => { setCartao(c); void gravarAjuste('cartao', c); }} />
       )}
       {rota === 'assinaturas' && <Assinaturas recorrentes={saida?.recorrentes ?? []} />}

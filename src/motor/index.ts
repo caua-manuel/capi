@@ -17,6 +17,7 @@ import { preverFatura, type Cartao, type PrevisaoDeFatura } from './previsao';
 import { escolherAvisos, type Aviso, type AvisoMostrado } from './avisos';
 import { gerarDicas, type Dica } from './dicas';
 
+import { evolucaoDaFatura, type EvolucaoDaFatura } from './evolucao';
 import { sugerirInvestimento, type SugestaoDeInvestimento } from './investir';
 
 /** Tudo o que o Motor precisa. As Telas leem do Repositório e passam aqui. */
@@ -69,6 +70,8 @@ export interface SaidaDoMotor {
   dicas: Dica[];
   /** Só quando o objetivo inclui investir e o perfil foi respondido. */
   investimento: SugestaoDeInvestimento | null;
+  /** Os últimos 6 meses do cartão por Grupo e o destaque de alta seguida. */
+  evolucao: EvolucaoDaFatura;
 }
 
 /** A função de entrada do Motor: puro, sem tela e sem ler nem gravar dados. */
@@ -106,5 +109,6 @@ export function calcular(e: EntradaDoMotor): SaidaDoMotor {
   const investimento = e.onboarding.objetivos.includes('investir') && e.onboarding.perfilDeInvestidor
     ? sugerirInvestimento(e.onboarding.perfilDeInvestidor, reservaCompleta)
     : null;
-  return { diagnostico, mesDoPlano, plano, metas, dividas, recorrentes, previsao, avisos, dicas, investimento };
+  const evolucao = evolucaoDaFatura({ hoje: e.hoje, lancamentos: e.lancamentos, categorias: e.categorias });
+  return { diagnostico, mesDoPlano, plano, metas, dividas, recorrentes, previsao, avisos, dicas, investimento, evolucao };
 }
