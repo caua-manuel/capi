@@ -3,7 +3,8 @@ import { CampoDinheiro } from '../componentes/CampoDinheiro';
 import { Icone } from '../componentes/Icone';
 import type { Categoria } from '../dominio/categorias';
 import type {
-  ComQuemMora, Divida, FixoDeclarado, Objetivo, OndeGuarda, RespostasDoOnboarding, TipoDeDivida, TipoDeRenda, Trabalho,
+  ComQuemMora, Divida, ExperienciaComInvestir, FixoDeclarado, Objetivo, OndeGuarda, PerfilDeInvestidor, PrazoDoDinheiro,
+  RespostasDoOnboarding, TipoDeDivida, TipoDeRenda, ToleranciaAPerda, Trabalho,
 } from '../dominio/onboarding';
 import type { Centavos } from '../motor/dinheiro';
 import { formatarReais, hoje } from './formato';
@@ -39,6 +40,9 @@ export const OBJETIVOS = opcoes<Objetivo>([
   ['comprar', 'Comprar algo'], ['investir', 'Começar a investir'], ['morar-sozinho', 'Morar sozinho, casar ou filho'],
   ['organizar', 'Parar de faltar dinheiro'], ['aposentadoria', 'Aposentadoria'],
 ]);
+const TOLERANCIAS = opcoes<ToleranciaAPerda>([['vende', 'Venderia'], ['espera', 'Esperaria'], ['compra-mais', 'Compraria mais']]);
+const PRAZOS = opcoes<PrazoDoDinheiro>([['ate-2-anos', 'Até 2 anos'], ['de-2-a-5-anos', 'De 2 a 5 anos'], ['mais-de-5-anos', 'Mais de 5 anos']]);
+const EXPERIENCIAS = opcoes<ExperienciaComInvestir>([['nenhuma', 'Nenhuma'], ['pouca', 'Pouca'], ['bastante', 'Bastante']]);
 const SUGESTOES_DE_FIXO: [string, string][] = [
   ['Academia', 'treino'], ['Celular', 'casa-contas'], ['Internet', 'casa-contas'], ['Faculdade', 'educacao'], ['Plano de saúde', 'saude'],
 ];
@@ -61,7 +65,15 @@ interface Rascunho {
   dividas: Divida[];
   guardado: Centavos | null;
   onde: OndeGuarda;
+  /** Quanto já guarda por mês; nulo = ainda sem resposta (opcional). */
+  guardaPorMes: Centavos | null;
+  /** Quanto paga além das parcelas; nulo = deixa o app usar a Sobra. */
+  pagaAlem: Centavos | null;
   objetivos: Objetivo[];
+  temDependentes: boolean | null;
+  tolerancia: ToleranciaAPerda | null;
+  prazo: PrazoDoDinheiro | null;
+  experiencia: ExperienciaComInvestir | null;
   estimado: string[];
 }
 
@@ -69,7 +81,8 @@ function rascunhoDe(r?: RespostasDoOnboarding): Rascunho {
   if (!r) {
     return {
       renda: null, tipo: 'fixa', ultimosMeses: Array<Centavos | null>(6).fill(null), trabalho: null, comQuem: null, moradia: null, fixos: [],
-      variaveisEssencial: null, variaveisEstilo: null, temDividas: null, dividas: [], guardado: null, onde: 'conta', objetivos: [], estimado: [],
+      variaveisEssencial: null, variaveisEstilo: null, temDividas: null, dividas: [], guardado: null, onde: 'conta', guardaPorMes: null, pagaAlem: null,
+      objetivos: [], temDependentes: null, tolerancia: null, prazo: null, experiencia: null, estimado: [],
     };
   }
   return {
@@ -77,7 +90,10 @@ function rascunhoDe(r?: RespostasDoOnboarding): Rascunho {
     ultimosMeses: [...r.renda.ultimosMeses, ...Array<Centavos | null>(6).fill(null)].slice(0, 6),
     trabalho: r.trabalho, comQuem: r.moradia.comQuem, moradia: r.moradia.valor, fixos: r.fixos,
     variaveisEssencial: r.variaveis.essencial, variaveisEstilo: r.variaveis.estiloDeVida,
-    temDividas: r.dividas.length > 0, dividas: r.dividas, guardado: r.guardado.valor, onde: r.guardado.onde, objetivos: r.objetivos, estimado: r.estimado,
+    temDividas: r.dividas.length > 0, dividas: r.dividas, guardado: r.guardado.valor, onde: r.guardado.onde,
+    guardaPorMes: r.guardaPorMes ?? null, pagaAlem: r.pagaAlemDasParcelas ?? null, objetivos: r.objetivos,
+    temDependentes: r.temDependentes ?? null, tolerancia: r.perfilDeInvestidor?.tolerancia ?? null, prazo: r.perfilDeInvestidor?.prazo ?? null,
+    experiencia: r.perfilDeInvestidor?.experiencia ?? null, estimado: r.estimado,
   };
 }
 
@@ -107,6 +123,8 @@ export function Onboarding({ inicial, categorias, salarioMinimo, onConcluir, onS
   const [passo, setPasso] = useState(0);
   // Quem já respondeu antes (editando as respostas) pula as boas-vindas.
   const [boasVindasFeitas, setBoasVindasFeitas] = useState(Boolean(inicial));
+  // Muda quando "não sei os juros" preenche 3%, para os campos de juros mostrarem o novo valor.
+  const [versaoDosJuros, setVersaoDosJuros] = useState(0);
   const [r, setR] = useState<Rascunho>(() => rascunhoDe(inicial));
   const mudar = (parcial: Partial<Rascunho>) => setR((atual) => ({ ...atual, ...parcial }));
   const estimar = (pergunta: string, parcial: Partial<Rascunho>) =>
@@ -122,7 +140,9 @@ export function Onboarding({ inicial, categorias, salarioMinimo, onConcluir, onS
     r.fixos.every((f) => f.nome.trim() && f.valor > 0),
     r.temDividas === false || (r.temDividas === true && r.dividas.length > 0 && r.dividas.every((d) => d.saldo > 0)),
     r.guardado !== null,
-    r.objetivos.length > 0,
+    r.objetivos.length > 0
+      && (!r.objetivos.includes('reserva') || r.temDependentes !== null)
+      && (!r.objetivos.includes('investir') || (r.tolerancia !== null && r.prazo !== null && r.experiencia !== null)),
   ][passo];
 
   function concluir() {
@@ -135,9 +155,12 @@ export function Onboarding({ inicial, categorias, salarioMinimo, onConcluir, onS
       anuais: inicial?.anuais ?? [],
       dividas: r.temDividas ? r.dividas.map((d) => ({ ...d, nome: d.nome.trim() || 'Dívida' })) : [],
       guardado: { valor: r.guardado ?? 0, onde: r.onde },
-      guardaPorMes: inicial?.guardaPorMes,
+      guardaPorMes: r.guardaPorMes ?? undefined,
+      pagaAlemDasParcelas: r.temDividas && r.pagaAlem !== null ? r.pagaAlem : undefined,
       objetivos: r.objetivos,
-      temDependentes: inicial?.temDependentes,
+      temDependentes: r.objetivos.includes('reserva') && r.temDependentes !== null ? r.temDependentes : undefined,
+      perfilDeInvestidor: r.objetivos.includes('investir') && r.tolerancia && r.prazo && r.experiencia
+        ? ({ tolerancia: r.tolerancia, prazo: r.prazo, experiencia: r.experiencia } satisfies PerfilDeInvestidor) : undefined,
       estimado: r.estimado,
       respondidoEm: inicial?.respondidoEm ?? hoje(),
     });
@@ -303,7 +326,7 @@ export function Onboarding({ inicial, categorias, salarioMinimo, onConcluir, onS
                 <CampoDinheiro id={`saldo-${d.id}`} rotulo="Quanto falta pagar" valor={d.saldo || null} onMudar={(v) => mudarDivida(d.id, { saldo: v ?? 0 })} />
                 <div className="linha-dupla">
                   <label className="rotulo">Juros ao mês (%)
-                    <input className="seletor num" inputMode="decimal" defaultValue={String(Math.round(d.jurosMensal * 1000) / 10).replace('.', ',')}
+                    <input key={versaoDosJuros} className="seletor num" inputMode="decimal" defaultValue={String(Math.round(d.jurosMensal * 1000) / 10).replace('.', ',')}
                       onChange={(e) => mudarDivida(d.id, { jurosMensal: Math.max(0, Number(e.target.value.replace(',', '.')) || 0) / 100 })} />
                   </label>
                   <CampoDinheiro id={`parcela-${d.id}`} rotulo="Parcela" valor={d.parcela || null} onMudar={(v) => mudarDivida(d.id, { parcela: v ?? 0 })} />
@@ -321,6 +344,25 @@ export function Onboarding({ inicial, categorias, salarioMinimo, onConcluir, onS
               <button type="button" className="chip chip-novo" style={{ alignSelf: 'flex-start' }}
                 onClick={() => mudar({ dividas: [...r.dividas, novaDivida()] })}>+ Outra dívida</button>
             )}
+            {r.temDividas && r.dividas.length > 0 && (
+              <button type="button" className="link-estimar" onClick={() => {
+                mudar({ dividas: r.dividas.map((d) => ({ ...d, jurosMensal: 0.03 })) });
+                setVersaoDosJuros((v) => v + 1);
+                estimar('juros', {});
+              }}>Não sei os juros, quero estimar (3% ao mês)</button>
+            )}
+            {r.temDividas && (
+              <>
+                <div className="cartao" style={{ margin: 0 }}>
+                  <CampoDinheiro id="paga-alem" rotulo="Quanto consegue pagar por mês além das parcelas?" valor={r.pagaAlem} onMudar={(v) => mudar({ pagaAlem: v })} />
+                </div>
+                <div className="chips-livres">
+                  <button type="button" className="chip" aria-pressed={r.pagaAlem === 0} onClick={() => mudar({ pagaAlem: 0 })}>Só as parcelas</button>
+                  <button type="button" className="chip" aria-pressed={r.pagaAlem === null && r.estimado.includes('paga-alem')}
+                    onClick={() => estimar('paga-alem', { pagaAlem: null })}>Não sei, usa minha sobra</button>
+                </div>
+              </>
+            )}
             <p className="ajuda">Juros altos viram prioridade no plano. Não sabe os juros? Deixe 3%, dá para mudar depois.</p>
           </Pergunta>
         )}
@@ -334,7 +376,18 @@ export function Onboarding({ inicial, categorias, salarioMinimo, onConcluir, onS
               <button type="button" className="chip" aria-pressed={r.guardado === 0} onClick={() => mudar({ guardado: 0 })}>Nada ainda</button>
             </div>
             <Chips lista={ONDE} valor={r.onde} onEscolher={(onde) => mudar({ onde })} />
-            <p className="ajuda">É o ponto de partida da reserva e das metas.</p>
+            <button type="button" className="link-estimar" onClick={() => estimar('guardado', { guardado: Math.round(renda * 0.5) })}>
+              Não sei, quero estimar
+            </button>
+            <div className="cartao" style={{ margin: 0 }}>
+              <CampoDinheiro id="guarda-por-mes" rotulo="E quanto guarda por mês, se guarda?" valor={r.guardaPorMes} onMudar={(v) => mudar({ guardaPorMes: v })} />
+            </div>
+            <div className="chips-livres">
+              <button type="button" className="chip" aria-pressed={r.guardaPorMes === 0} onClick={() => mudar({ guardaPorMes: 0 })}>Não guardo</button>
+              <button type="button" className="chip" aria-pressed={r.estimado.includes('guarda-por-mes')}
+                onClick={() => estimar('guarda-por-mes', { guardaPorMes: Math.round(renda * 0.1) })}>Não sei, quero estimar</button>
+            </div>
+            <p className="ajuda">É o ponto de partida da reserva e das metas. Quanto você guarda por mês vira o ritmo da data de cada meta.</p>
           </Pergunta>
         )}
 
@@ -342,6 +395,23 @@ export function Onboarding({ inicial, categorias, salarioMinimo, onConcluir, onS
           <Pergunta linha1="Quais são seus" linha2="objetivos?">
             <Chips multiplo lista={OBJETIVOS} valor={r.objetivos}
               onEscolher={(o) => mudar({ objetivos: r.objetivos.includes(o) ? r.objetivos.filter((x) => x !== o) : [...r.objetivos, o] })} />
+            {r.objetivos.includes('reserva') && (
+              <div className="linha-form">
+                <span className="rotulo">Alguém depende de você?</span>
+                <Chips lista={[['sim', 'Sim'], ['nao', 'Não']]} valor={r.temDependentes === null ? null : r.temDependentes ? 'sim' : 'nao'}
+                  onEscolher={(v) => mudar({ temDependentes: v === 'sim' })} />
+              </div>
+            )}
+            {r.objetivos.includes('investir') && (
+              <div className="linha-form">
+                <span className="rotulo">Se seu investimento caísse 20% em um mês, você…</span>
+                <Chips lista={TOLERANCIAS} valor={r.tolerancia} onEscolher={(tolerancia) => mudar({ tolerancia })} />
+                <span className="rotulo">Por quanto tempo pode deixar esse dinheiro investido?</span>
+                <Chips lista={PRAZOS} valor={r.prazo} onEscolher={(prazo) => mudar({ prazo })} />
+                <span className="rotulo">Sua experiência com investimentos</span>
+                <Chips lista={EXPERIENCIAS} valor={r.experiencia} onEscolher={(experiencia) => mudar({ experiencia })} />
+              </div>
+            )}
             <p className="ajuda">Pode escolher vários. Eu coloco em ordem para você.</p>
           </Pergunta>
         )}

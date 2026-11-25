@@ -331,7 +331,7 @@ export function App() {
       {rota === 'calendario' && calendario && <Calendario calendario={calendario} hoje={hoje()} />}
       {rota === 'parametros' &&<Parametros salvos={parametros} hoje={hoje()} onSalvar={salvarParametros} />}
       {rota === 'metas' && saida && (
-        <Metas plano={saida.metas} metas={metas} renda={saida.diagnostico.renda} temDividas={saida.dividas !== null} dicas={saida.dicas}
+        <Metas plano={saida.metas} metas={metas} renda={saida.diagnostico.renda} temDividas={saida.dividas !== null} dicas={saida.dicas} investimento={saida.investimento}
           onSalvar={(m) => { setMetas((atuais) => [...atuais.filter((x) => x.id !== m.id), m]); void salvarMeta(m); }}
           onApagar={(id) => { setMetas((atuais) => atuais.filter((x) => x.id !== id)); void apagarMeta(id); }} />
       )}

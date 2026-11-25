@@ -17,6 +17,8 @@ import { preverFatura, type Cartao, type PrevisaoDeFatura } from './previsao';
 import { escolherAvisos, type Aviso, type AvisoMostrado } from './avisos';
 import { gerarDicas, type Dica } from './dicas';
 
+import { sugerirInvestimento, type SugestaoDeInvestimento } from './investir';
+
 /** Tudo o que o Motor precisa. As Telas leem do Repositório e passam aqui. */
 export interface EntradaDoMotor {
   /** Dia de hoje, AAAA-MM-DD. */
@@ -63,6 +65,8 @@ export interface SaidaDoMotor {
   previsao: PrevisaoDeFatura | null;
   avisos: Aviso[];
   dicas: Dica[];
+  /** Só quando o objetivo inclui investir e o perfil foi respondido. */
+  investimento: SugestaoDeInvestimento | null;
 }
 
 /** A função de entrada do Motor: puro, sem tela e sem ler nem gravar dados. */
@@ -79,9 +83,10 @@ export function calcular(e: EntradaDoMotor): SaidaDoMotor {
   const metasCom = (extra: Centavos) => planejarMetas({
     hoje: e.hoje, metas: e.metas ?? [], dividas: e.onboarding.dividas, diagnostico: { ...diagnostico, sobra: diagnostico.sobra + extra },
     plano, categorias: e.categorias, rendimentoMensal: e.parametros.rendimentoMensalConservador, compra: e.compra,
+    guardaPorMes: e.onboarding.guardaPorMes,
   });
   const metas = metasCom(0);
-  const dividas = analisarDividas(e.onboarding.dividas, diagnostico.sobra, diagnostico.renda);
+  const dividas = analisarDividas(e.onboarding.dividas, diagnostico.sobra, diagnostico.renda, e.onboarding.pagaAlemDasParcelas);
   const recorrentes = detectarRecorrentes(e.faturas ?? [], e.parametros.iofInternacional);
   const previsao = e.cartao ? preverFatura({
     hoje: e.hoje, cartao: e.cartao, lancamentos: e.lancamentos, faturas: e.faturas ?? [], fixos: e.fixos, recorrentes,
@@ -94,5 +99,9 @@ export function calcular(e: EntradaDoMotor): SaidaDoMotor {
     hoje: e.hoje, onboarding: e.onboarding, diagnostico, plano, metas, recorrentes, lancamentos: e.lancamentos, faturas: e.faturas ?? [],
     parametros: e.parametros, metasComExtra: metasCom,
   });
-  return { diagnostico, mesDoPlano, plano, metas, dividas, recorrentes, previsao, avisos, dicas };
+  const reservaCompleta = metas.escada.find((m) => m.id === 'reserva')?.feita ?? false;
+  const investimento = e.onboarding.objetivos.includes('investir') && e.onboarding.perfilDeInvestidor
+    ? sugerirInvestimento(e.onboarding.perfilDeInvestidor, reservaCompleta)
+    : null;
+  return { diagnostico, mesDoPlano, plano, metas, dividas, recorrentes, previsao, avisos, dicas, investimento };
 }

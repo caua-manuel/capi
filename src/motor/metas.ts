@@ -100,6 +100,8 @@ export interface EntradaDasMetas {
   plano: Plano;
   categorias: readonly Categoria[];
   rendimentoMensal: number;
+  /** Quanto a pessoa já guarda por mês (pergunta 11): vira o ritmo da data "no seu ritmo". */
+  guardaPorMes?: Centavos;
   /** Compra simulada no "Posso comprar?": sai do dinheiro dos primeiros meses. */
   compra?: { valor: Centavos; parcelas: number };
 }
@@ -210,8 +212,12 @@ export function planejarMetas(e: EntradaDasMetas): PlanoDasMetas {
   const pmts = new Map<string, Centavos>();
   for (const m of e.metas) if (m.dataAlvo) pmts.set(m.id, aporteNecessario(m.valorAlvo, m.valorAtual, mesesAte(m.dataAlvo), r));
 
-  const noRitmo = simular(e, disponivel, pmts);
-  const comCortes = simular(e, disponivel + cortesSugeridos, pmts);
+  // O Aporte do mês vem da Sobra distribuída pela escada. A data "no seu ritmo" usa o que a pessoa
+  // já guarda por mês, quando ela informou; sem isso, o ritmo é a própria Sobra.
+  const ritmoAtual = e.guardaPorMes && e.guardaPorMes > 0 ? e.guardaPorMes : disponivel;
+  const planejado = simular(e, disponivel, pmts);
+  const noRitmo = ritmoAtual === disponivel ? planejado : simular(e, ritmoAtual, pmts);
+  const comCortes = simular(e, ritmoAtual + cortesSugeridos, pmts);
   const data = (s: Simulacao, id: string) => {
     const k = s.concluiEm.get(id);
     return k === undefined ? null : somarMeses(mes, Math.max(0, k - 1));
@@ -220,7 +226,7 @@ export function planejarMetas(e: EntradaDasMetas): PlanoDasMetas {
   const escada: MetaNaEscada[] = [];
   const item = (id: string, nome: string, degrau: Degrau, alvo: Centavos, atual: Centavos, extra: Partial<MetaNaEscada> = {}): MetaNaEscada => ({
     id, nome, degrau, alvo, atual, progresso: alvo > 0 ? Math.min(1, atual / alvo) : 1, feita: atual >= alvo,
-    aporte: Math.round(noRitmo.aporte.get(id) ?? 0), dataNoRitmo: data(noRitmo, id), dataComCortes: data(comCortes, id), ...extra,
+    aporte: Math.round(planejado.aporte.get(id) ?? 0), dataNoRitmo: data(noRitmo, id), dataComCortes: data(comCortes, id), ...extra,
   });
 
   escada.push(item('colchao', 'Colchão de 1 mês', 1, d.custoDeVida, Math.min(d.reservaAtual, d.custoDeVida)));

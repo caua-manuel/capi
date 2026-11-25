@@ -93,9 +93,10 @@ export function compararMetodos(dividas: readonly Divida[], extraPorMes: Centavo
   };
 }
 
-export function analisarDividas(dividas: readonly Divida[], sobra: Centavos, renda: Centavos): AnaliseDasDividas | null {
+/** `pagaAlemDasParcelas` é o que a pessoa disse que paga a mais por mês; sem ele, o extra é a Sobra. */
+export function analisarDividas(dividas: readonly Divida[], sobra: Centavos, renda: Centavos, pagaAlemDasParcelas?: Centavos): AnaliseDasDividas | null {
   if (dividas.length === 0) return null;
-  const extraPorMes = Math.max(0, sobra);
+  const extraPorMes = pagaAlemDasParcelas !== undefined ? Math.max(0, pagaAlemDasParcelas) : Math.max(0, sobra);
   const comparacao = compararMetodos(dividas, extraPorMes, renda);
   const parcelas = dividas.reduce((s, d) => s + d.parcela, 0);
   const total = dividas.reduce((s, d) => s + d.saldo, 0);
