@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { Categoria } from '../dominio/categorias';
 import type { Aviso } from '../motor/avisos';
 import type { Dica, TipoDeDica } from '../motor/dicas';
@@ -12,9 +12,9 @@ const diasAte = (n: number) => (n === 1 ? 'Amanhã' : `Em ${n} dias`);
 function textoDoAviso(a: Aviso, nome: (id: string) => string, hoje: string): ReactNode {
   switch (a.tipo) {
     case 'teto-estourado':
-      return <>Passou <Valor centavos={a.excesso} /> em {nome(a.categoriaId)}. Dá para ajustar de outra categoria.</>;
+      return <><b>Passou <Valor centavos={a.excesso} /> em {nome(a.categoriaId)}.</b> Dá para ajustar de outra categoria.</>;
     case 'teto-80':
-      return <>{nome(a.categoriaId)}: <Valor centavos={a.gasto} /> de <Valor centavos={a.teto} />. Faltam {a.diasRestantes} dias.</>;
+      return <><b>{nome(a.categoriaId)}: <Valor centavos={a.gasto} /> de <Valor centavos={a.teto} />.</b> Faltam {a.diasRestantes} dias.</>;
     case 'ritmo-diario':
       return <>Para fechar no plano: até <Valor centavos={a.porDia} />/dia nesta semana.</>;
     case 'assinatura-chegando': {
@@ -32,17 +32,28 @@ function textoDoAviso(a: Aviso, nome: (id: string) => string, hoje: string): Rea
   }
 }
 
+/** Aviso compacto: só o mais importante à vista; os outros abrem num toque. */
 export function ListaDeAvisos({ avisos, categorias, hoje }: { avisos: readonly Aviso[]; categorias: readonly Categoria[]; hoje: string }) {
+  const [aberta, setAberta] = useState(false);
   if (avisos.length === 0) return null;
   const nome = (id: string) => categorias.find((c) => c.id === id)?.nome ?? 'Outros';
+  const visiveis = aberta ? avisos : avisos.slice(0, 1);
+  const outros = avisos.length - 1;
   return (
     <ul className="lista-avisos" aria-label="Avisos">
-      {avisos.map((a) => (
+      {visiveis.map((a) => (
         <li key={a.chave} className="aviso">
-          <span className="aviso-sino"><Icone nome="sino" tamanho={16} /></span>
-          <span>{textoDoAviso(a, nome, hoje)}</span>
+          <span className="aviso-sino"><Icone nome="sino" tamanho={18} /></span>
+          <span className="aviso-texto">{textoDoAviso(a, nome, hoje)}</span>
         </li>
       ))}
+      {outros > 0 && (
+        <li>
+          <button type="button" className="link link-aviso" aria-expanded={aberta} onClick={() => setAberta(!aberta)}>
+            {aberta ? 'Mostrar só o principal' : outros === 1 ? 'Ver mais 1 aviso' : `Ver mais ${outros} avisos`}
+          </button>
+        </li>
+      )}
     </ul>
   );
 }

@@ -28,6 +28,7 @@ import { Fatura as TelaFatura } from './telas/Fatura';
 import type { Cartao } from './motor/previsao';
 import type { AvisoMostrado } from './motor/avisos';
 import { Cabecalho, Folha } from './componentes/Cabecalho';
+import { BarraDeBaixo, ehAba } from './componentes/BarraDeBaixo';
 import { mesCurto } from './telas/formato';
 import { PARAMETROS_PADRAO } from './motor/parametros';
 import { gravarOnboarding, lerOnboarding } from './repositorio/onboarding';
@@ -220,7 +221,10 @@ export function App() {
 
   return (
     <ProvedorDiscreto ligado={discreto !== false}>
-      {rota === 'ajustes' && <Ajustes />}
+      {rota === 'ajustes' && (
+        <Ajustes discreto={discreto === true} onAlternarDiscreto={alternarDiscreto} quantidadeDeFixos={fixos.length}
+          categoriasPadrao={todas.length - proprias.length} categoriasProprias={proprias.length} />
+      )}
       {rota === 'metas' && saida && (
         <Metas plano={saida.metas} metas={metas} renda={saida.diagnostico.renda} temDividas={saida.dividas !== null} dicas={saida.dicas}
           onSalvar={(m) => { setMetas((atuais) => [...atuais.filter((x) => x.id !== m.id), m]); void salvarMeta(m); }}
@@ -262,13 +266,14 @@ export function App() {
           onCriar={(nome, grupo) => void criarCategoria(nome, grupo)} onRenomear={renomearCategoria} onApagar={apagarCategoria} />
       )}
       {(rota === 'inicio' || rota === 'lancar') && (
-        <Inicio mes={mes} lancamentos={lancamentos} categorias={todas} onAjustes={() => navegar('ajustes')} onAlternarDiscreto={alternarDiscreto}
+        <Inicio mes={mes} lancamentos={lancamentos} categorias={todas} onAlternarDiscreto={alternarDiscreto}
           semPlano={onboarding === undefined} onMontarPlano={() => navegar('onboarding')}
           plano={saida?.plano ?? null} metas={metasNaHome} onMetas={() => navegar('metas')}
           previsao={saida?.previsao ?? null} onFatura={() => navegar('fatura')} avisos={saida?.avisos ?? []}
           comprasParaLembrar={paraLembrar} onResolverCompra={resolverCompra} onPossoComprar={() => navegar('posso-comprar')}
           onLancar={() => setFolha({ tipo: 'novo' })} onEditar={(l) => setFolha({ tipo: 'editar', lancamento: l })} />
       )}
+      {ehAba(rota) && <BarraDeBaixo ativa={rota} onLancar={() => setFolha({ tipo: 'novo' })} />}
       {folha && (
         <NovoGasto key={folha.tipo === 'editar' ? folha.lancamento.id : 'novo'} categorias={visiveis} regras={regras}
           onCriarCategoria={criarCategoria}

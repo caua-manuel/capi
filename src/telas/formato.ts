@@ -39,6 +39,11 @@ export function rotuloDaData(data: string): string {
   return `${data.slice(8, 10)}/${data.slice(5, 7)}`;
 }
 
+/** Semana do mês (1 a 5): dias 1–7 são a semana 1. */
+export function semanaDoMes(data: string): number {
+  return Math.ceil(Number(data.slice(8, 10)) / 7);
+}
+
 export function saudacao(): string {
   const hora = new Date().getHours();
   if (hora < 12) return 'Bom dia';
