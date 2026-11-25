@@ -8,6 +8,8 @@ import type { Centavos } from './dinheiro';
 import { fixosDoMes, type OcorrenciaDeFixo } from './fixos';
 import type { Parametros } from './parametros';
 import { planejar, type Plano } from './plano';
+import { planejarMetas, type PlanoDasMetas } from './metas';
+import type { Meta } from '../dominio/meta';
 
 /** Tudo o que o Motor precisa. As Telas leem do Repositório e passam aqui. */
 export interface EntradaDoMotor {
@@ -20,6 +22,8 @@ export interface EntradaDoMotor {
   /** Lançamentos dos últimos meses. */
   lancamentos: readonly Lancamento[];
   parametros: Parametros;
+  /** Metas criadas pelo Usuário. */
+  metas?: readonly Meta[];
 }
 
 export interface MesDoPlano {
@@ -36,6 +40,7 @@ export interface SaidaDoMotor {
   diagnostico: Diagnostico;
   mesDoPlano: MesDoPlano;
   plano: Plano;
+  metas: PlanoDasMetas;
 }
 
 /** A função de entrada do Motor: puro, sem tela e sem ler nem gravar dados. */
@@ -49,5 +54,9 @@ export function calcular(e: EntradaDoMotor): SaidaDoMotor {
     mes, fixos: doMes, fixosNoCartao: doMes.filter((f) => f.forma === 'cartao'), totalDosFixos: doMes.reduce((s, f) => s + f.valor, 0),
   };
   const plano = planejar({ hoje: e.hoje, diagnostico, fixosDoMes: doMes, categorias: e.categorias, lancamentos: e.lancamentos });
-  return { diagnostico, mesDoPlano, plano };
+  const metas = planejarMetas({
+    hoje: e.hoje, metas: e.metas ?? [], dividas: e.onboarding.dividas, diagnostico, plano, categorias: e.categorias,
+    rendimentoMensal: e.parametros.rendimentoMensalConservador,
+  });
+  return { diagnostico, mesDoPlano, plano, metas };
 }
