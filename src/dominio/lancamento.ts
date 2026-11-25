@@ -12,4 +12,8 @@ export interface Lancamento {
   origem: OrigemDoLancamento;
   /** Momento do registro, ISO. */
   criadoEm: string;
+  /** Linha da Fatura que este Lançamento representa, depois da Conciliação ou Importação. */
+  idDaLinha?: string;
+  /** Parcela "x/y", quando veio de uma compra parcelada. */
+  parcela?: { atual: number; total: number };
 }
