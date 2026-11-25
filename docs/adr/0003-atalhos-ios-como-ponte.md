@@ -4,4 +4,4 @@ O app Atalhos recebe a Transação do Apple Pay (pagamento por aproximação, no
 
 A automação de Transação envia o valor e a Loja à ponte do ADR 0002. O push leva ao Capi instalado, que lê os Pendentes e abre o Novo gasto para o Usuário confirmar a Categoria. As automações de horário continuam usando notificações locais.
 
-Os Atalhos existentes podem continuar usando a URL de entrada. Os parâmetros `valor`, `loja` e `origem` formam um contrato público e seguem compatíveis.
+O guia em Ajustes orienta novas automações a usar a ação Obter Conteúdo do URL com `POST /pagamento`. Os Atalhos existentes podem continuar usando a URL de entrada. Os parâmetros `valor`, `loja` e `origem` formam um contrato público e seguem compatíveis.

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { apagarCodigoDoAparelho, chavePublicaDoAtalho, confirmarCodigoDoAparelho, desligarAtalho, enviarParaPonte, lerCodigoDoAparelho, obterCodigoDoAparelho } from '../leitor/pushDoAtalho';
 import { lerAmbiente } from './instalacao';
 
-export function NotificacoesDoAtalho() {
+export function NotificacoesDoAtalho({ onCodigoDisponivel }: { onCodigoDisponivel: (codigo: string | null) => void }) {
   const { standaloneDoIOS, modoDeExibicaoStandalone } = lerAmbiente();
   const instalado = standaloneDoIOS || modoDeExibicaoStandalone;
   const suportaPush = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
@@ -26,6 +26,11 @@ export function NotificacoesDoAtalho() {
     });
     return () => { visivel = false; };
   }, [instalado, suportaPush, chavePublica]);
+
+  useEffect(() => {
+    const podeMostrar = instalado && suportaPush && chavePublica && inscricao && Notification.permission === 'granted';
+    onCodigoDisponivel(podeMostrar ? codigo : null);
+  }, [chavePublica, codigo, inscricao, instalado, suportaPush, onCodigoDisponivel]);
 
   async function inscrever(novaInscricao: PushSubscription) {
     const codigoDoAparelho = obterCodigoDoAparelho();

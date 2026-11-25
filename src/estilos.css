@@ -117,6 +117,16 @@ a { color: var(--bl); text-decoration: none; }
   display: block; width: 100%; padding: 10px 12px; border-radius: 14px; background: var(--sf2);
   font-size: 12px; line-height: 1.5; word-break: break-all;
 }
+.passo-corpo { flex: 1; min-width: 0; }
+.passo-corpo p { margin: 8px 0 0; }
+.campos-do-atalho { display: grid; gap: 14px; margin: 12px 0 0; }
+.campos-do-atalho dt { font-weight: 600; }
+.campos-do-atalho dd { margin: 4px 0 0; }
+.campos-do-atalho ul { padding-left: 18px; margin: 4px 0 0; }
+.passo-print {
+  display: grid; place-items: center; min-height: 112px; margin: 12px 0 0; padding: 12px;
+  border-radius: 14px; background: var(--sf2); color: var(--tx2); text-align: center;
+}
 
 /* Categorias */
 .lista-categorias { list-style: none; margin: 8px 0 0; padding: 0; }
