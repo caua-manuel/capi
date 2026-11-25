@@ -1,8 +1,8 @@
 // Rotas simples pelo caminho do endereço, relativas à base do app (/capi/ no GitHub Pages).
 
-export type Rota = 'inicio' | 'lancar' | 'ajustes' | 'atalho' | 'categorias' | 'onboarding' | 'diagnostico' | 'fixos' | 'metas' | 'dividas' | 'assinaturas' | 'fatura' | 'posso-comprar' | 'parametros';
+export type Rota = 'inicio' | 'lancar' | 'ajustes' | 'atalho' | 'categorias' | 'onboarding' | 'diagnostico' | 'fixos' | 'metas' | 'dividas' | 'assinaturas' | 'fatura' | 'posso-comprar' | 'parametros' | 'calendario';
 
-const ROTAS: readonly Rota[] = ['lancar', 'ajustes', 'atalho', 'categorias', 'onboarding', 'diagnostico', 'fixos', 'metas', 'dividas', 'assinaturas', 'fatura', 'posso-comprar', 'parametros'];
+const ROTAS: readonly Rota[] = ['lancar', 'ajustes', 'atalho', 'categorias', 'onboarding', 'diagnostico', 'fixos', 'metas', 'dividas', 'assinaturas', 'fatura', 'posso-comprar', 'parametros', 'calendario'];
 
 export function rotaAtual(): Rota {
   const base = import.meta.env.BASE_URL;

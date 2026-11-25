@@ -378,3 +378,26 @@ a { color: var(--bl); text-decoration: none; }
 .lista-compra li { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
 .lista-compra li > span:first-child { color: var(--tx2); }
 .segmentado button { min-width: 0; }
+
+/* Calendário */
+.topo-simples { display: flex; align-items: center; justify-content: space-between; padding: 0 20px 6px; }
+.meses-resumo { padding: 10px 16px 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.mes-resumo { padding: 14px; border-radius: 22px; background: var(--sf); box-shadow: var(--sh); min-width: 0; }
+.mes-resumo.apertado { background: var(--hero2); color: #FFFFFF; }
+.mes-nome { font-size: 12px; font-weight: 600; color: var(--tx2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mes-resumo.apertado .mes-nome { color: #F0C25C; }
+.mes-total { font-size: 18px; font-weight: 600; margin: 4px 0 8px; white-space: nowrap; }
+.mes-barra { height: 4px; border-radius: 4px; background: var(--sf2); overflow: hidden; }
+.mes-barra > div { height: 100%; border-radius: 4px; background: var(--bl); }
+.mes-resumo.apertado .mes-barra { background: rgba(255, 255, 255, .15); }
+.mes-resumo.apertado .mes-barra > div { background: #F0C25C; }
+.dica-gelo { margin: 12px 16px 0; padding: 16px 18px; border-radius: 24px; background: linear-gradient(180deg, var(--ice1), var(--ice2)); color: var(--icetx); font-size: 14px; overflow-wrap: anywhere; }
+.lista-compromissos { list-style: none; margin: 0; padding: 0; }
+.lista-compromissos li { display: flex; gap: 14px; align-items: center; padding: 12px 0; }
+.lista-compromissos li + li { border-top: 1px solid var(--ln); }
+.caixa-dia { width: 44px; height: 52px; flex: none; border-radius: 16px; background: var(--sf2); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.caixa-dia .dia { font-size: 17px; font-weight: 600; line-height: 1; }
+.caixa-dia .semana { font-size: 10px; color: var(--tx2); font-weight: 600; text-transform: uppercase; margin-top: 2px; }
+.compromisso-texto { flex: 1; min-width: 0; }
+.compromisso-nome { font-weight: 600; overflow-wrap: anywhere; }
+.compromisso-valor { font-weight: 600; flex: none; }

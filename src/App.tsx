@@ -32,6 +32,8 @@ import { BarraDeBaixo, ehAba } from './componentes/BarraDeBaixo';
 import { mesCurto } from './telas/formato';
 import { gravarParametros, lerParametros, parametrosPadraoSalvos, type ParametrosSalvos } from './repositorio/parametros';
 import { Parametros, resumoDosParametros } from './telas/Parametros';
+import { montarCalendario } from './motor/calendario';
+import { Calendario } from './telas/Calendario';
 import { gravarOnboarding, lerOnboarding } from './repositorio/onboarding';
 import { Diagnostico } from './telas/Diagnostico';
 import { Onboarding } from './telas/Onboarding';
@@ -145,6 +147,13 @@ export function App() {
   }, [onboarding, fixos, todas, recentes, metas, faturas, cartao, avisosMostrados, ultimaAbertura, parametros]);
   const saida = useMemo(() => (entradaDoMotor ? calcular(entradaDoMotor) : null), [entradaDoMotor]);
 
+  const calendario = useMemo(() => {
+    if (!onboarding || !saida) return null;
+    return montarCalendario({
+      hoje: hoje(), fixos, recorrentes: saida.recorrentes, faturas, cartao, anuais: onboarding.anuais, respondidoEm: onboarding.respondidoEm,
+    });
+  }, [onboarding, saida, fixos, faturas, cartao]);
+
   // Regra das 24 horas: compras guardadas e as que já passaram de 24 h.
   const [emEspera, setEmEspera] = useState<CompraEmEspera[]>([]);
   useEffect(() => { void lerAjuste<CompraEmEspera[]>('compras-24h').then((l) => setEmEspera(l ?? [])); }, []);
@@ -233,7 +242,8 @@ export function App() {
           categoriasPadrao={todas.length - proprias.length} categoriasProprias={proprias.length}
           resumoDosParametros={resumoDosParametros(parametros.valores)} />
       )}
-      {rota === 'parametros' && <Parametros salvos={parametros} hoje={hoje()} onSalvar={salvarParametros} />}
+      {rota === 'calendario' && calendario && <Calendario calendario={calendario} hoje={hoje()} />}
+      {rota === 'parametros' &&<Parametros salvos={parametros} hoje={hoje()} onSalvar={salvarParametros} />}
       {rota === 'metas' && saida && (
         <Metas plano={saida.metas} metas={metas} renda={saida.diagnostico.renda} temDividas={saida.dividas !== null} dicas={saida.dicas}
           onSalvar={(m) => { setMetas((atuais) => [...atuais.filter((x) => x.id !== m.id), m]); void salvarMeta(m); }}
@@ -279,7 +289,7 @@ export function App() {
           semPlano={onboarding === undefined} onMontarPlano={() => navegar('onboarding')}
           plano={saida?.plano ?? null} metas={metasNaHome} onMetas={() => navegar('metas')}
           previsao={saida?.previsao ?? null} onFatura={() => navegar('fatura')} avisos={saida?.avisos ?? []}
-          comprasParaLembrar={paraLembrar} onResolverCompra={resolverCompra} onPossoComprar={() => navegar('posso-comprar')}
+          comprasParaLembrar={paraLembrar} onResolverCompra={resolverCompra} onPossoComprar={() => navegar('posso-comprar')} onCalendario={() => navegar('calendario')}
           onLancar={() => setFolha({ tipo: 'novo' })} onEditar={(l) => setFolha({ tipo: 'editar', lancamento: l })} />
       )}
       {ehAba(rota) && <BarraDeBaixo ativa={rota} onLancar={() => setFolha({ tipo: 'novo' })} />}
