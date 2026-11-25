@@ -5,6 +5,7 @@ import type { Centavos } from '../motor/dinheiro';
 import type { Plano } from '../motor/plano';
 import type { PrevisaoDeFatura } from '../motor/previsao';
 import type { Aviso } from '../motor/avisos';
+import type { CompraEmEspera } from '../motor/compra';
 import { ListaDeAvisos } from '../componentes/Avisos';
 import { hoje } from './formato';
 import { Valor, useModoDiscreto } from './discreto';
@@ -30,6 +31,10 @@ interface Props {
   previsao: PrevisaoDeFatura | null;
   onFatura: () => void;
   avisos: readonly Aviso[];
+  /** Compras guardadas pela regra das 24 horas que já podem ser decididas. */
+  comprasParaLembrar: readonly CompraEmEspera[];
+  onResolverCompra: (id: string) => void;
+  onPossoComprar: () => void;
 }
 
 export interface MetaNaHome {
@@ -49,7 +54,7 @@ function atualizadoEm(lancamentos: readonly Lancamento[]): string | null {
   return `${dois(d.getDate())}/${dois(d.getMonth() + 1)}, ${dois(d.getHours())}:${dois(d.getMinutes())}`;
 }
 
-export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAjustes, onAlternarDiscreto, semPlano, onMontarPlano, plano, metas, onMetas, previsao, onFatura, avisos }: Props) {
+export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAjustes, onAlternarDiscreto, semPlano, onMontarPlano, plano, metas, onMetas, previsao, onFatura, avisos, comprasParaLembrar, onResolverCompra, onPossoComprar }: Props) {
   const discreto = useModoDiscreto();
   const total = lancamentos.reduce((soma, l) => soma + l.valor, 0);
   const nomeDaCategoria = (id: string) => categorias.find((c) => c.id === id)?.nome ?? 'Outros';
@@ -99,6 +104,17 @@ export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAju
 
         <ListaDeAvisos avisos={avisos} categorias={categorias} hoje={hoje()} />
 
+        {comprasParaLembrar.map((c) => (
+          <section key={c.id} className="cartao">
+            <h2 className="titulo">Já passaram 24 horas: ainda quer {c.descricao}?</h2>
+            <p className="texto-2" style={{ margin: '4px 0 10px' }}><Valor centavos={c.preco} />{c.parcelas > 1 ? ` em ${c.parcelas}x` : ' à vista'}.</p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" className="chip" style={{ flex: 1 }} onClick={() => onResolverCompra(c.id)}>Desisti</button>
+              <button type="button" className="chip" aria-pressed="true" style={{ flex: 1 }} onClick={() => { onResolverCompra(c.id); onLancar(); }}>Comprei, lançar</button>
+            </div>
+          </section>
+        ))}
+
         {plano && (
           <button type="button" className="cartao-gelo bloco-fatura" onClick={onFatura} aria-label="Abrir a Previsão de fatura">
             {previsao ? (
@@ -113,6 +129,12 @@ export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAju
               <span className="texto-2">Previsão de fatura: toque para informar o dia de fechamento do cartão.</span>
             )}
           </button>
+        )}
+
+        {plano && (
+          <div style={{ margin: '12px 16px 0' }}>
+            <button type="button" className="botao-secundario" onClick={onPossoComprar}>Posso comprar?</button>
+          </div>
         )}
 
         {plano && plano.tetos.length > 0 && (

@@ -38,6 +38,8 @@ export interface EntradaDoMotor {
   avisosMostrados?: readonly AvisoMostrado[];
   /** Dia em que o app foi aberto pela última vez antes de hoje, AAAA-MM-DD. */
   ultimaAbertura?: string;
+  /** Compra simulada pelo "Posso comprar?". */
+  compra?: { valor: Centavos; parcelas: number };
 }
 
 export interface MesDoPlano {
@@ -76,7 +78,7 @@ export function calcular(e: EntradaDoMotor): SaidaDoMotor {
   const plano = planejar({ hoje: e.hoje, diagnostico, fixosDoMes: doMes, categorias: e.categorias, lancamentos: e.lancamentos });
   const metasCom = (extra: Centavos) => planejarMetas({
     hoje: e.hoje, metas: e.metas ?? [], dividas: e.onboarding.dividas, diagnostico: { ...diagnostico, sobra: diagnostico.sobra + extra },
-    plano, categorias: e.categorias, rendimentoMensal: e.parametros.rendimentoMensalConservador,
+    plano, categorias: e.categorias, rendimentoMensal: e.parametros.rendimentoMensalConservador, compra: e.compra,
   });
   const metas = metasCom(0);
   const dividas = analisarDividas(e.onboarding.dividas, diagnostico.sobra, diagnostico.renda);

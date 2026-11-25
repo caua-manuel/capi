@@ -9,7 +9,9 @@ import type { RegrasDeEstabelecimento } from './leitor/leitor';
 import { lerUrlDeEntrada } from './leitor/url';
 import { apagarLancamento, listarLancamentosDesde, listarLancamentosDoMes, salvarLancamento } from './repositorio/lancamentos';
 import type { RespostasDoOnboarding } from './dominio/onboarding';
-import { calcular } from './motor';
+import { calcular, type EntradaDoMotor } from './motor';
+import { comprasParaLembrar, type Compra, type CompraEmEspera } from './motor/compra';
+import { PossoComprar } from './telas/PossoComprar';
 import { somarDias, somarMeses } from './motor/datas';
 import { sincronizarFixosDoOnboarding } from './motor/fixos';
 import type { Fixo } from './dominio/fixo';
@@ -126,13 +128,29 @@ export function App() {
     if (!o && lista.length === 0 && rotaAtual() === 'inicio') navegar('onboarding', true);
   }, [mes]);
 
-  const saida = useMemo(() => {
+  const entradaDoMotor = useMemo<EntradaDoMotor | null>(() => {
     if (!onboarding) return null;
-    return calcular({
+    return {
       hoje: hoje(), onboarding, fixos,
       categorias: todas, lancamentos: recentes, parametros: PARAMETROS_PADRAO, metas, faturas, cartao, avisosMostrados, ultimaAbertura,
-    });
+    };
   }, [onboarding, fixos, todas, recentes, metas, faturas, cartao, avisosMostrados, ultimaAbertura]);
+  const saida = useMemo(() => (entradaDoMotor ? calcular(entradaDoMotor) : null), [entradaDoMotor]);
+
+  // Regra das 24 horas: compras guardadas e as que já passaram de 24 h.
+  const [emEspera, setEmEspera] = useState<CompraEmEspera[]>([]);
+  useEffect(() => { void lerAjuste<CompraEmEspera[]>('compras-24h').then((l) => setEmEspera(l ?? [])); }, []);
+  const paraLembrar = useMemo(() => comprasParaLembrar(emEspera, new Date().toISOString()), [emEspera]);
+  function guardarCompra(descricao: string, compra: Compra) {
+    const lista = [...emEspera, { ...compra, id: crypto.randomUUID(), descricao, guardadaEm: new Date().toISOString() }];
+    setEmEspera(lista);
+    void gravarAjuste('compras-24h', lista);
+  }
+  function resolverCompra(id: string) {
+    const lista = emEspera.filter((c) => c.id !== id);
+    setEmEspera(lista);
+    void gravarAjuste('compras-24h', lista);
+  }
 
   // Guarda os Avisos que apareceram pela primeira vez, para o limite de 3 por semana.
   useEffect(() => {
@@ -215,6 +233,9 @@ export function App() {
           <Folha><p className="texto-2">Você não informou dívidas. Se tiver alguma, inclua em Ajustes → Suas respostas.</p></Folha>
         </main>
       )}
+      {rota === 'posso-comprar' && entradaDoMotor && (
+        <PossoComprar entrada={entradaDoMotor} categorias={visiveis} onEsperar24h={guardarCompra} />
+      )}
       {rota === 'fatura' && (
         <TelaFatura previsao={saida?.previsao ?? null} cartao={cartao} categorias={todas}
           onSalvarCartao={(c) => { setCartao(c); void gravarAjuste('cartao', c); }} />
@@ -245,6 +266,7 @@ export function App() {
           semPlano={onboarding === undefined} onMontarPlano={() => navegar('onboarding')}
           plano={saida?.plano ?? null} metas={metasNaHome} onMetas={() => navegar('metas')}
           previsao={saida?.previsao ?? null} onFatura={() => navegar('fatura')} avisos={saida?.avisos ?? []}
+          comprasParaLembrar={paraLembrar} onResolverCompra={resolverCompra} onPossoComprar={() => navegar('posso-comprar')}
           onLancar={() => setFolha({ tipo: 'novo' })} onEditar={(l) => setFolha({ tipo: 'editar', lancamento: l })} />
       )}
       {folha && (

@@ -100,6 +100,8 @@ export interface EntradaDasMetas {
   plano: Plano;
   categorias: readonly Categoria[];
   rendimentoMensal: number;
+  /** Compra simulada no "Posso comprar?": sai do dinheiro dos primeiros meses. */
+  compra?: { valor: Centavos; parcelas: number };
 }
 
 interface Simulacao {
@@ -124,6 +126,16 @@ function simular(e: EntradaDasMetas, disponivel: Centavos, pmts: Map<string, Cen
   const aporte = new Map<string, Centavos>();
   const concluiEm = new Map<string, number>();
   let livre = disponivel;
+  // A compra simulada entra antes das Metas; o que não couber num mês passa para o seguinte.
+  let compraPendente = 0;
+  const parcelaDaCompra = (mes: number): Centavos => {
+    const c = e.compra;
+    if (!c) return 0;
+    if (c.parcelas <= 1) return mes === 1 ? c.valor : 0;
+    if (mes > c.parcelas) return 0;
+    const base = Math.floor(c.valor / c.parcelas);
+    return mes === 1 ? c.valor - base * (c.parcelas - 1) : base;
+  };
 
   const concluir = (id: string, mes: number) => { if (!concluiEm.has(id)) concluiEm.set(id, mes); };
   const verificar = (mes: number) => {
@@ -142,7 +154,10 @@ function simular(e: EntradaDasMetas, disponivel: Centavos, pmts: Map<string, Cen
       // Dívida quitada: a parcela dela vira dinheiro livre (efeito bola de neve).
       if (divida <= 0) { divida = 0; livre += parcelasCaras; }
     }
-    let disponivelNoMes = livre;
+    compraPendente += parcelaDaCompra(mes);
+    const paraACompra = Math.min(compraPendente, livre);
+    compraPendente -= paraACompra;
+    let disponivelNoMes = livre - paraACompra;
     const dar = (id: string, valor: number) => {
       if (valor <= 0) return;
       disponivelNoMes -= valor;
