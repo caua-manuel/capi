@@ -1,6 +1,6 @@
 # Capi: finanças de bolso
 
-O app se chama **Capi**, e a mascote é a Capi, uma capivara. PWA individual, minimalista e genérico de finanças pessoais para o Brasil. A pessoa responde um onboarding e recebe um Plano mensal com Tetos, Metas com data, dicas e avisos. Os gastos entram por lançamento rápido, pelo Atalho do Apple Pay e pelo texto colado da Fatura. Não tem servidor nem login, e os dados ficam só no aparelho.
+O app se chama **Capi**, e a mascote é a Capi, uma capivara. PWA individual, minimalista e genérico de finanças pessoais para o Brasil. A pessoa responde um onboarding e recebe um Plano mensal com Tetos, Metas com data, dicas e avisos. Os gastos entram por lançamento rápido, pelo Atalho do Apple Pay e pelo texto colado da Fatura. O Plano e o histórico ficam no aparelho, sem login. O Atalho do Apple Pay pode usar a ponte descrita no ADR 0002.
 
 ## Ler antes de qualquer tarefa, nesta ordem
 
@@ -13,7 +13,7 @@ O app se chama **Capi**, e a mascote é a Capi, uma capivara. PWA individual, mi
 
 ## Regras fixas
 
-- **Sem servidor, sem login, sem push** (ADR 0002). Nada de backend, API própria ou Open Finance no MVP.
+- **Dados financeiros locais, sem login** (ADR 0002). O único Worker aprovado é a ponte opcional do Atalho do Apple Pay, com Web Push restrito a esse fluxo. Open Finance fica fora do MVP.
 - **Só um Usuário por aparelho** (ADR 0001).
 - **A URL de entrada é um contrato** (ADR 0003). Não mude os parâmetros `valor`, `loja` e `origem` sem manter compatibilidade.
 - **O Motor é puro.** Toda conta financeira fica no Motor, sem tela e sem ler nem gravar dados. As Telas só mostram o que o Motor devolve.

@@ -3,6 +3,8 @@ dist/
 dev-dist/
 .env
 .env.*
+.dev.vars*
+.wrangler/
 *.local
 coverage/
 .DS_Store

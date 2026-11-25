@@ -1,3 +1,7 @@
 # Atalhos do iOS como ponte para o app
 
-Um PWA não recebe dados do Apple Pay nem agenda notificações sem servidor. Por isso usamos automações do app Atalhos como ponte. A automação de Transação (pagamento por aproximação, no crédito ou no débito) abre o app por uma URL com valor e loja já preenchidos. As automações de horário mostram uma notificação local que abre o app. Esse formato de URL é um contrato público: os Atalhos já instalados pelos usuários dependem dele, então ele não pode mudar sem manter compatibilidade.
+O app Atalhos recebe a Transação do Apple Pay (pagamento por aproximação, no crédito ou no débito). A URL de entrada abre o Safari no iPhone, onde o Capi usa um armazenamento separado do app instalado. A prova de Web Push verifica se tocar em uma notificação abre o Capi instalado a partir do iOS 16.4.
+
+Após a confirmação no iPhone, a automação de Transação passará a enviar o valor e a Loja à ponte do ADR 0002. O push leva ao Capi instalado, que lê o Pendente e abre o Novo gasto para o Usuário confirmar a Categoria. As automações de horário continuam usando notificações locais.
+
+Os Atalhos existentes podem continuar usando a URL de entrada. Os parâmetros `valor`, `loja` e `origem` formam um contrato público e seguem compatíveis.

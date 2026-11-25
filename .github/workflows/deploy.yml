@@ -20,6 +20,8 @@ jobs:
     env:
       # Base real do repositório (nome: capi); build e artefato usam a mesma.
       VITE_BASE_PATH: /capi/
+      VITE_PONTE_APPLE_PAY_URL: ${{ vars.VITE_PONTE_APPLE_PAY_URL }}
+      VITE_VAPID_CHAVE_PUBLICA: ${{ vars.VITE_VAPID_CHAVE_PUBLICA }}
     permissions:
       contents: read
       pages: read

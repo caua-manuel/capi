@@ -69,14 +69,14 @@ export function Ajustes({ discreto, podeInstalar, aparencia, onMudarAparencia, o
         <img className="capi" src={`${import.meta.env.BASE_URL}capi/capi-cofre.png`} alt="" style={{ height: 96 }} />
         <div>
           <div style={{ fontWeight: 600 }}>Seus dados ficam comigo</div>
-          <div className="texto-2" style={{ fontSize: 13 }}>Só neste celular, sem login e sem servidor. Faça backup todo mês.</div>
+          <div className="texto-2" style={{ fontSize: 13 }}>Seu Plano fica neste celular. Faça backup todo mês.</div>
         </div>
       </div>
 
       <Grupo titulo="Privacidade">
         <Linha icone="olhoFechado" titulo="Modo discreto" descricao="Esconde os valores"
           fim={<input type="checkbox" role="switch" className="interruptor" aria-label="Modo discreto" checked={discreto} onChange={onAlternarDiscreto} />} />
-        <Linha icone="escudo" verde titulo="Dados só neste celular" descricao="Sem login e sem servidor" />
+        <Linha icone="escudo" verde titulo="Dados do Plano só neste celular" descricao="Sem login" />
       </Grupo>
 
       <Grupo titulo="Aparência">
