@@ -3,6 +3,7 @@ import type { Lancamento } from '../dominio/lancamento';
 import { Icone } from '../componentes/Icone';
 import type { Centavos } from '../motor/dinheiro';
 import type { Plano } from '../motor/plano';
+import type { PrevisaoDeFatura } from '../motor/previsao';
 import { Valor, useModoDiscreto } from './discreto';
 import { nomeDoMes, rotuloDaData, saudacao } from './formato';
 
@@ -23,6 +24,8 @@ interface Props {
   /** Barras de Metas para a home. */
   metas: MetaNaHome[];
   onMetas: () => void;
+  previsao: PrevisaoDeFatura | null;
+  onFatura: () => void;
 }
 
 export interface MetaNaHome {
@@ -42,7 +45,7 @@ function atualizadoEm(lancamentos: readonly Lancamento[]): string | null {
   return `${dois(d.getDate())}/${dois(d.getMonth() + 1)}, ${dois(d.getHours())}:${dois(d.getMinutes())}`;
 }
 
-export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAjustes, onAlternarDiscreto, semPlano, onMontarPlano, plano, metas, onMetas }: Props) {
+export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAjustes, onAlternarDiscreto, semPlano, onMontarPlano, plano, metas, onMetas, previsao, onFatura }: Props) {
   const discreto = useModoDiscreto();
   const total = lancamentos.reduce((soma, l) => soma + l.valor, 0);
   const nomeDaCategoria = (id: string) => categorias.find((c) => c.id === id)?.nome ?? 'Outros';
@@ -88,6 +91,22 @@ export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAju
               {lancamentos.length === 1 ? '1 lançamento' : `${lancamentos.length} lançamentos`}
             </div>
           </section>
+        )}
+
+        {plano && (
+          <button type="button" className="cartao-gelo bloco-fatura" onClick={onFatura} aria-label="Abrir a Previsão de fatura">
+            {previsao ? (
+              <>
+                <span className="rotulo">Fatura de {nomeDoMes(previsao.ciclo.vencimento.slice(0, 7))} fecha {previsao.diasAteFechamento === 0 ? 'hoje' : previsao.diasAteFechamento === 1 ? 'amanhã' : `em ${previsao.diasAteFechamento} dias`}</span>
+                <span className="num valor-gelo" style={{ fontSize: 24 }}><Valor centavos={previsao.total} /></span>
+                {previsao.porCategoria.slice(0, 3).map((c) => (
+                  <span key={c.categoriaId} className="linha-fatura"><span>{nomeDaCategoria(c.categoriaId)}</span><span className="num"><Valor centavos={c.total} semCentavos /></span></span>
+                ))}
+              </>
+            ) : (
+              <span className="texto-2">Previsão de fatura: toque para informar o dia de fechamento do cartão.</span>
+            )}
+          </button>
         )}
 
         {plano && plano.tetos.length > 0 && (
