@@ -290,3 +290,6 @@ a { color: var(--bl); text-decoration: none; }
 }
 .numero-meta.feita { background: var(--oksf); color: var(--ok); }
 @media (prefers-color-scheme: dark) { .numero-meta:not(.feita) { background: var(--sf2); } }
+.selo { align-self: flex-start; margin-top: 4px; padding: 3px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; white-space: normal; }
+.selo.estado-ruim { background: var(--badsf); color: var(--bad); }
+.selo.estado-atencao { background: var(--warnsf); color: var(--warn); }

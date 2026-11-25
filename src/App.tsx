@@ -19,6 +19,9 @@ import type { Meta } from './dominio/meta';
 import { apagarMeta, listarMetas, salvarMeta } from './repositorio/metas';
 import { Metas } from './telas/Metas';
 import { Dividas } from './telas/Dividas';
+import type { Fatura } from './dominio/fatura';
+import { listarFaturas } from './repositorio/faturas';
+import { Assinaturas } from './telas/Assinaturas';
 import { Cabecalho, Folha } from './componentes/Cabecalho';
 import { mesCurto } from './telas/formato';
 import { PARAMETROS_PADRAO } from './motor/parametros';
@@ -80,10 +83,11 @@ export function App() {
   const [recentes, setRecentes] = useState<Lancamento[]>([]);
   const [fixos, setFixos] = useState<Fixo[]>([]);
   const [metas, setMetas] = useState<Meta[]>([]);
+  const [faturas, setFaturas] = useState<Fatura[]>([]);
 
   const recarregar = useCallback(async () => {
-    const [lista, r, p, e, o, rec, fx, mt] = await Promise.all([
-      listarLancamentosDoMes(mes), lerRegras(), listarCategoriasProprias(), lerEscondidas(), lerOnboarding(), listarLancamentosDesde(somarMeses(mes, -3)), listarFixos(), listarMetas(),
+    const [lista, r, p, e, o, rec, fx, mt, ft] = await Promise.all([
+      listarLancamentosDoMes(mes), lerRegras(), listarCategoriasProprias(), lerEscondidas(), lerOnboarding(), listarLancamentosDesde(somarMeses(mes, -3)), listarFixos(), listarMetas(), listarFaturas(),
     ]);
     setLancamentos(lista);
     setRegras(r);
@@ -92,6 +96,7 @@ export function App() {
     setOnboarding(o);
     setRecentes(rec);
     setMetas(mt);
+    setFaturas(ft);
     // Quem respondeu o Onboarding antes dos Fixos existirem ganha os Fixos dele cadastrados.
     if (o && fx.length === 0) {
       const criados = sincronizarFixosDoOnboarding([], o, mesDe(o.respondidoEm));
@@ -108,9 +113,9 @@ export function App() {
     if (!onboarding) return null;
     return calcular({
       hoje: hoje(), onboarding, fixos,
-      categorias: todas, lancamentos: recentes, parametros: PARAMETROS_PADRAO, metas,
+      categorias: todas, lancamentos: recentes, parametros: PARAMETROS_PADRAO, metas, faturas,
     });
-  }, [onboarding, fixos, todas, recentes, metas]);
+  }, [onboarding, fixos, todas, recentes, metas, faturas]);
 
   // Na home: as Metas que ainda não foram feitas, na ordem da escada.
   const metasNaHome: MetaNaHome[] = (saida?.metas.escada ?? []).filter((m) => !m.feita).slice(0, 3).map((m) => ({
@@ -182,6 +187,7 @@ export function App() {
           <Folha><p className="texto-2">Você não informou dívidas. Se tiver alguma, inclua em Ajustes → Suas respostas.</p></Folha>
         </main>
       )}
+      {rota === 'assinaturas' && <Assinaturas recorrentes={saida?.recorrentes ?? []} />}
       {rota === 'fixos' && (
         <Fixos fixos={fixos} mes={mes} categorias={visiveis}
           onSalvar={(f) => { setFixos((atuais) => [...atuais.filter((x) => x.id !== f.id), f]); void salvarFixo(f); }} />
