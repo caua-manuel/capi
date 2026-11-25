@@ -75,6 +75,7 @@ export function Ajustes({ discreto, onAlternarDiscreto, quantidadeDeFixos, categ
 
       <Grupo titulo="Atalhos do iPhone">
         <Linha icone="raio" titulo="Lançar pelo Apple Pay" descricao="Abre o app preenchido ao pagar" fim={seta} onClick={() => navegar('atalho')} />
+        <Linha icone="sino" titulo="Lembretes" descricao="Check-in, dia do pagamento e fechamento" fim={seta} onClick={() => navegar('lembretes')} />
       </Grupo>
 
       <Grupo titulo="Plano">
