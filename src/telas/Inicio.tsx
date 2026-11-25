@@ -4,6 +4,9 @@ import { Icone } from '../componentes/Icone';
 import type { Centavos } from '../motor/dinheiro';
 import type { Plano } from '../motor/plano';
 import type { PrevisaoDeFatura } from '../motor/previsao';
+import type { Aviso } from '../motor/avisos';
+import { ListaDeAvisos } from '../componentes/Avisos';
+import { hoje } from './formato';
 import { Valor, useModoDiscreto } from './discreto';
 import { nomeDoMes, rotuloDaData, saudacao } from './formato';
 
@@ -26,6 +29,7 @@ interface Props {
   onMetas: () => void;
   previsao: PrevisaoDeFatura | null;
   onFatura: () => void;
+  avisos: readonly Aviso[];
 }
 
 export interface MetaNaHome {
@@ -45,7 +49,7 @@ function atualizadoEm(lancamentos: readonly Lancamento[]): string | null {
   return `${dois(d.getDate())}/${dois(d.getMonth() + 1)}, ${dois(d.getHours())}:${dois(d.getMinutes())}`;
 }
 
-export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAjustes, onAlternarDiscreto, semPlano, onMontarPlano, plano, metas, onMetas, previsao, onFatura }: Props) {
+export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAjustes, onAlternarDiscreto, semPlano, onMontarPlano, plano, metas, onMetas, previsao, onFatura, avisos }: Props) {
   const discreto = useModoDiscreto();
   const total = lancamentos.reduce((soma, l) => soma + l.valor, 0);
   const nomeDaCategoria = (id: string) => categorias.find((c) => c.id === id)?.nome ?? 'Outros';
@@ -92,6 +96,8 @@ export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAju
             </div>
           </section>
         )}
+
+        <ListaDeAvisos avisos={avisos} categorias={categorias} hoje={hoje()} />
 
         {plano && (
           <button type="button" className="cartao-gelo bloco-fatura" onClick={onFatura} aria-label="Abrir a Previsão de fatura">

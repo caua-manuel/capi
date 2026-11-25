@@ -9,6 +9,8 @@ import {
   compararCompra, metaDeAposentadoria, metaDeViagem, testeDeMorarSozinho, type MetaNaEscada, type PlanoDasMetas,
 } from '../motor/metas';
 import { Valor } from './discreto';
+import type { Dica } from '../motor/dicas';
+import { ListaDeDicas } from '../componentes/Avisos';
 import { mesCurto } from './formato';
 import { navegar } from './rotas';
 
@@ -22,6 +24,7 @@ interface Props {
   metas: readonly Meta[];
   renda: Centavos;
   temDividas: boolean;
+  dicas: readonly Dica[];
   onSalvar: (meta: Meta) => void;
   onApagar: (id: string) => void;
 }
@@ -132,7 +135,7 @@ function linhaDaData(m: MetaNaEscada): string {
   return `Chega em ${ritmo}${cortes}`;
 }
 
-export function Metas({ plano, metas, renda, temDividas, onSalvar, onApagar }: Props) {
+export function Metas({ plano, metas, renda, temDividas, dicas, onSalvar, onApagar }: Props) {
   const [criando, setCriando] = useState(false);
   return (
     <main className="tela tela-detalhe">
@@ -201,6 +204,8 @@ export function Metas({ plano, metas, renda, temDividas, onSalvar, onApagar }: P
             );
           })}
         </ol>
+
+        <ListaDeDicas dicas={dicas} />
 
         {criando ? (
           <NovaMeta renda={renda} onSalvar={(m) => { onSalvar(m); setCriando(false); }} onCancelar={() => setCriando(false)} />

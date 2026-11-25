@@ -10,7 +10,7 @@ import { lerUrlDeEntrada } from './leitor/url';
 import { apagarLancamento, listarLancamentosDesde, listarLancamentosDoMes, salvarLancamento } from './repositorio/lancamentos';
 import type { RespostasDoOnboarding } from './dominio/onboarding';
 import { calcular } from './motor';
-import { somarMeses } from './motor/datas';
+import { somarDias, somarMeses } from './motor/datas';
 import { sincronizarFixosDoOnboarding } from './motor/fixos';
 import type { Fixo } from './dominio/fixo';
 import { listarFixos, salvarFixo, salvarFixos } from './repositorio/fixos';
@@ -24,6 +24,7 @@ import { listarFaturas } from './repositorio/faturas';
 import { Assinaturas } from './telas/Assinaturas';
 import { Fatura as TelaFatura } from './telas/Fatura';
 import type { Cartao } from './motor/previsao';
+import type { AvisoMostrado } from './motor/avisos';
 import { Cabecalho, Folha } from './componentes/Cabecalho';
 import { mesCurto } from './telas/formato';
 import { PARAMETROS_PADRAO } from './motor/parametros';
@@ -87,6 +88,18 @@ export function App() {
   const [metas, setMetas] = useState<Meta[]>([]);
   const [faturas, setFaturas] = useState<Fatura[]>([]);
   const [cartao, setCartao] = useState<Cartao | undefined>();
+  const [avisosMostrados, setAvisosMostrados] = useState<AvisoMostrado[]>([]);
+  // Última abertura antes de hoje, lida uma vez, para o Aviso "sumiu".
+  const [ultimaAbertura, setUltimaAbertura] = useState<string | undefined>();
+
+  useEffect(() => {
+    void (async () => {
+      const anterior = await lerAjuste<string>('ultima-abertura');
+      setUltimaAbertura(anterior && anterior < hoje() ? anterior : undefined);
+      await gravarAjuste('ultima-abertura', hoje());
+      setAvisosMostrados((await lerAjuste<AvisoMostrado[]>('avisos-mostrados')) ?? []);
+    })();
+  }, []);
 
   const recarregar = useCallback(async () => {
     const [lista, r, p, e, o, rec, fx, mt, ft, ct] = await Promise.all([
@@ -117,9 +130,20 @@ export function App() {
     if (!onboarding) return null;
     return calcular({
       hoje: hoje(), onboarding, fixos,
-      categorias: todas, lancamentos: recentes, parametros: PARAMETROS_PADRAO, metas, faturas, cartao,
+      categorias: todas, lancamentos: recentes, parametros: PARAMETROS_PADRAO, metas, faturas, cartao, avisosMostrados, ultimaAbertura,
     });
-  }, [onboarding, fixos, todas, recentes, metas, faturas, cartao]);
+  }, [onboarding, fixos, todas, recentes, metas, faturas, cartao, avisosMostrados, ultimaAbertura]);
+
+  // Guarda os Avisos que apareceram pela primeira vez, para o limite de 3 por semana.
+  useEffect(() => {
+    if (!saida) return;
+    const novos = saida.avisos.filter((a) => !avisosMostrados.some((m) => m.chave === a.chave));
+    if (novos.length === 0) return;
+    const corte = somarDias(hoje(), -30);
+    const lista = [...avisosMostrados.filter((m) => m.data >= corte), ...novos.map((a) => ({ chave: a.chave, data: hoje() }))];
+    setAvisosMostrados(lista);
+    void gravarAjuste('avisos-mostrados', lista);
+  }, [saida, avisosMostrados]);
 
   // Na home: as Metas que ainda não foram feitas, na ordem da escada.
   const metasNaHome: MetaNaHome[] = (saida?.metas.escada ?? []).filter((m) => !m.feita).slice(0, 3).map((m) => ({
@@ -180,7 +204,7 @@ export function App() {
     <ProvedorDiscreto ligado={discreto !== false}>
       {rota === 'ajustes' && <Ajustes />}
       {rota === 'metas' && saida && (
-        <Metas plano={saida.metas} metas={metas} renda={saida.diagnostico.renda} temDividas={saida.dividas !== null}
+        <Metas plano={saida.metas} metas={metas} renda={saida.diagnostico.renda} temDividas={saida.dividas !== null} dicas={saida.dicas}
           onSalvar={(m) => { setMetas((atuais) => [...atuais.filter((x) => x.id !== m.id), m]); void salvarMeta(m); }}
           onApagar={(id) => { setMetas((atuais) => atuais.filter((x) => x.id !== id)); void apagarMeta(id); }} />
       )}
@@ -220,7 +244,7 @@ export function App() {
         <Inicio mes={mes} lancamentos={lancamentos} categorias={todas} onAjustes={() => navegar('ajustes')} onAlternarDiscreto={alternarDiscreto}
           semPlano={onboarding === undefined} onMontarPlano={() => navegar('onboarding')}
           plano={saida?.plano ?? null} metas={metasNaHome} onMetas={() => navegar('metas')}
-          previsao={saida?.previsao ?? null} onFatura={() => navegar('fatura')}
+          previsao={saida?.previsao ?? null} onFatura={() => navegar('fatura')} avisos={saida?.avisos ?? []}
           onLancar={() => setFolha({ tipo: 'novo' })} onEditar={(l) => setFolha({ tipo: 'editar', lancamento: l })} />
       )}
       {folha && (

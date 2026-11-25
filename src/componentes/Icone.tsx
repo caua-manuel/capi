@@ -10,6 +10,7 @@ const caminhos = {
   ajustes: <><path d="M4 7h10M18 7h2M4 17h2M10 17h10" /><circle cx="16" cy="7" r="2" /><circle cx="8" cy="17" r="2" /></>,
   voltar: <path d="M15 18l-6-6 6-6" />,
   lapis: <path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4" />,
+  sino: <><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z" /><path d="M10 20a2 2 0 0 0 4 0" /></>,
 } as const;
 
 export type NomeDoIcone = keyof typeof caminhos;
