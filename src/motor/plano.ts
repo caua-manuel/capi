@@ -70,6 +70,24 @@ export function aplicarCortes(tetos: readonly TetoDaCategoria[], cortes: Readonl
   });
 }
 
+export interface TetoDepoisDoGasto {
+  gastoDepois: Centavos;
+  teto: Centavos;
+  estado: EstadoDoTeto;
+}
+
+/** Como fica o Teto da Categoria se este gasto entrar. Nulo quando não há Teto ou a compra é de outro mês. */
+export function tetoDepoisDoGasto(
+  plano: Plano, categoriaId: string, valor: Centavos, opcoes: { valorAnterior?: Centavos; mesDaCompra?: string } = {},
+): TetoDepoisDoGasto | null {
+  if ((opcoes.mesDaCompra ?? plano.mes) !== plano.mes) return null;
+  const t = plano.tetos.find((x) => x.categoriaId === categoriaId);
+  if (!t) return null;
+  const gastoDepois = t.gasto - (opcoes.valorAnterior ?? 0) + valor;
+  const uso = t.teto > 0 ? gastoDepois / t.teto : gastoDepois > 0 ? Number.POSITIVE_INFINITY : 0;
+  return { gastoDepois, teto: t.teto, estado: estadoDoUso(uso) };
+}
+
 export function planejar(e: EntradaDoPlano): Plano {
   const mes = mesDaData(e.hoje);
   const d = e.diagnostico;

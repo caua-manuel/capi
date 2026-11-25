@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Lancamento } from '../dominio/lancamento';
+import { tetoDepoisDoGasto, type Plano } from './plano';
 import { ana, bruno, rodar } from './teste/pessoas';
 
 let seq = 0;
@@ -101,5 +102,36 @@ describe('Quanto ainda pode gastar', () => {
     expect(estado('mercado')).toMatchObject({ gasto: 10000, restante: 30000, estado: 'normal' });
     expect(estado('delivery')).toMatchObject({ gasto: 17000, estado: 'atencao' });
     expect(estado('lazer')).toMatchObject({ gasto: 12000, estado: 'estourado' });
+  });
+});
+
+describe('Teto depois de um gasto novo', () => {
+  const planoComTeto = (gasto: number): Plano => ({
+    mes: '2026-12', guardarPorMes: 0, limiteDoMes: 0, gastoDoMes: gasto, aindaPodeGastar: 0, porDia: 0, diasRestantes: 10, mesSemTetos: false,
+    tetos: [{ categoriaId: 'delivery', teto: 50000, gasto, restante: 50000 - gasto, uso: gasto / 50000, estado: 'normal', media: 50000 }],
+  });
+
+  it('soma o gasto novo ao que já foi gasto na Categoria', () => {
+    expect(tetoDepoisDoGasto(planoComTeto(30000), 'delivery', 4200)).toMatchObject({ gastoDepois: 34200, teto: 50000, estado: 'normal' });
+  });
+
+  it('avisa que passa do Teto', () => {
+    expect(tetoDepoisDoGasto(planoComTeto(48000), 'delivery', 4200)).toMatchObject({ gastoDepois: 52200, estado: 'estourado' });
+  });
+
+  it('perto do Teto vira atenção', () => {
+    expect(tetoDepoisDoGasto(planoComTeto(40000), 'delivery', 3000)?.estado).toBe('atencao');
+  });
+
+  it('ao editar um gasto, não conta o valor antigo duas vezes', () => {
+    expect(tetoDepoisDoGasto(planoComTeto(30000), 'delivery', 5000, { valorAnterior: 4200 })?.gastoDepois).toBe(30800);
+  });
+
+  it('compra de outro mês não mexe no Teto deste mês', () => {
+    expect(tetoDepoisDoGasto(planoComTeto(30000), 'delivery', 4200, { mesDaCompra: '2026-11' })).toBeNull();
+  });
+
+  it('Categoria sem Teto não tem linha', () => {
+    expect(tetoDepoisDoGasto(planoComTeto(30000), 'mercado', 4200)).toBeNull();
   });
 });

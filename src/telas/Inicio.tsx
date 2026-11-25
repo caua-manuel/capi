@@ -118,10 +118,17 @@ export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAlt
       <header style={{ padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <img src={`${base}apple-touch-icon.png`} alt="Capi" width={44} height={44}
           style={{ borderRadius: 11, boxShadow: '0 2px 8px rgba(11,21,48,.18)' }} />
-        <button type="button" className="botao-redondo" aria-pressed={discreto} onClick={onAlternarDiscreto}
-          aria-label={discreto ? 'Mostrar valores' : 'Esconder valores (modo discreto)'}>
-          <Icone nome={discreto ? 'olhoFechado' : 'olho'} />
-        </button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button type="button" className="botao-redondo botao-sino" onClick={onCheckin}
+            aria-label={avisos.length > 0 ? `Avisos (${avisos.length}): abrir o Check-in` : 'Abrir o Check-in'}>
+            <Icone nome="sino" />
+            {avisos.length > 0 && <span className="marcador" aria-hidden="true" />}
+          </button>
+          <button type="button" className="botao-redondo" aria-pressed={discreto} onClick={onAlternarDiscreto}
+            aria-label={discreto ? 'Mostrar valores' : 'Esconder valores (modo discreto)'}>
+            <Icone nome={discreto ? 'olhoFechado' : 'olho'} />
+          </button>
+        </div>
       </header>
 
       <div className="saudacao">

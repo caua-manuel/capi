@@ -1,5 +1,6 @@
 /* Tokens do DESIGN.md. Tema claro e escuro seguem o aparelho. */
 :root {
+  color-scheme: light;
   --bg: #F1F3F7; --sf: #FFFFFF; --sf2: #EEF1F6;
   --tx: #0D1730; --tx2: #454F64; --tx3: #535E74; --ln: #E6EAF1;
   --hero1: #1E2E57; --hero2: #0B1530; --herotx2: #AFBCD8; --herodestaque: #A9C2FA;
@@ -12,10 +13,9 @@
   --glass: rgba(255, 255, 255, .78);
   --fonte-texto: -apple-system, "SF Pro Text", Inter, system-ui, sans-serif;
   --fonte-titulo: -apple-system, "SF Pro Display", Inter, system-ui, sans-serif;
-  color-scheme: light dark;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
+:root[data-tema="escuro"] {
+    color-scheme: dark;
     --bg: #080C17; --sf: #121A2C; --sf2: #1A2338;
     --tx: #EEF2FA; --tx2: #9CA8C0; --tx3: #8792AA; --ln: #212B42;
     --hero1: #2A3E74; --hero2: #121D3E; --herotx2: #B4C2E2; --herodestaque: #A9C2FA;
@@ -26,7 +26,6 @@
     --sh: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 28px rgba(0, 0, 0, .35);
     --glass: rgba(18, 26, 44, .78);
   }
-}
 
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); }
@@ -176,7 +175,7 @@ a { color: var(--bl); text-decoration: none; }
   width: 52px; height: 52px; flex: none; border-radius: 26px; border: none; background: var(--bl); color: #FFFFFF;
   display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 16px rgba(46, 91, 219, .35);
 }
-@media (prefers-color-scheme: dark) { .botao-lancar { color: #0B1530; } }
+:root[data-tema="escuro"] .botao-lancar { color: #0B1530; }
 
 /* Folha do lançamento rápido */
 .folha-fundo {
@@ -204,9 +203,7 @@ a { color: var(--bl); text-decoration: none; }
 .entendi { color: var(--bl); font-size: 13px; font-weight: 600; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chips .chip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-@media (prefers-color-scheme: dark) {
-  .chip[aria-pressed="true"] { background: #EEF2FA; color: #0B1530; }
-}
+:root[data-tema="escuro"] .chip[aria-pressed="true"] { background: #EEF2FA; color: #0B1530; }
 .selo-applepay {
   align-self: center; display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 14px;
   background: var(--oksf); color: var(--ok); font-weight: 600; font-size: 12px;
@@ -270,9 +267,7 @@ a { color: var(--bl); text-decoration: none; }
 .barra-progresso > div { height: 100%; border-radius: 3px; background: var(--bl); }
 .barra-progresso > div.atencao { background: var(--warn); }
 .barra-progresso > div.ruim { background: var(--bad); }
-@media (prefers-color-scheme: dark) {
-  .coluna-gelo + .coluna-gelo { border-left-color: rgba(255, 255, 255, .1); }
-}
+:root[data-tema="escuro"] .coluna-gelo + .coluna-gelo { border-left-color: rgba(255, 255, 255, .1); }
 .onboarding-rodape::before {
   content: ''; position: absolute; z-index: -1; left: -16px; right: -16px; top: -40px; bottom: -40px;
   background: linear-gradient(180deg, transparent, var(--bg) 40%); pointer-events: none;
@@ -292,7 +287,7 @@ a { color: var(--bl); text-decoration: none; }
   display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600;
 }
 .numero-meta.feita { background: var(--oksf); color: var(--ok); }
-@media (prefers-color-scheme: dark) { .numero-meta:not(.feita) { background: var(--sf2); } }
+:root[data-tema="escuro"] .numero-meta:not(.feita) { background: var(--sf2); }
 .selo { align-self: flex-start; margin-top: 4px; padding: 3px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; white-space: normal; }
 .selo.estado-ruim { background: var(--badsf); color: var(--bad); }
 .selo.estado-atencao { background: var(--warnsf); color: var(--warn); }
@@ -318,7 +313,8 @@ a { color: var(--bl); text-decoration: none; }
 .fatura-coluna .situacao.ruim { color: var(--bad); font-weight: 600; }
 .fatura-vazia { padding: 4px 10px 0; color: var(--tx2); font-size: 14px; }
 .chip-pequeno { height: 36px; margin: 12px 10px 0; padding: 0 14px; border-radius: 18px; border: none; background: var(--marinho-chip, var(--hero2)); color: #FFFFFF; font-weight: 600; font-size: 13px; }
-@media (prefers-color-scheme: dark) { .fatura-coluna + .fatura-coluna { border-left-color: rgba(255, 255, 255, .1); } .chip-pequeno { background: var(--bl); color: #0B1530; } }
+:root[data-tema="escuro"] .fatura-coluna + .fatura-coluna { border-left-color: rgba(255, 255, 255, .1); }
+:root[data-tema="escuro"] .chip-pequeno { background: var(--bl); color: #0B1530; }
 
 /* Início: saudação, hero, atalhos e Metas */
 .saudacao { padding: 14px 16px 0 22px; display: flex; align-items: center; gap: 8px; }
@@ -424,3 +420,10 @@ a { color: var(--bl); text-decoration: none; }
 .ese-controle input[type=range] { width: 100%; min-height: 44px; accent-color: var(--bl); margin: 0; }
 .ese-aporte { justify-content: space-between; align-items: center; padding: 16px 18px; }
 .acao-fixa { position: fixed; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom) + 26px); max-width: 430px; margin: 0 auto; padding: 0 16px; z-index: 5; }
+
+/* Linha do Teto no Novo gasto e sino da Início */
+.linha-teto { margin: 0; padding: 8px 12px; border-radius: 14px; background: var(--sf2); color: var(--tx2); font-size: 13px; font-weight: 500; }
+.linha-teto.atencao { background: var(--warnsf); color: var(--warn); }
+.linha-teto.estourado { background: var(--badsf); color: var(--bad); }
+.botao-sino { position: relative; }
+.botao-sino .marcador { position: absolute; top: 9px; right: 10px; width: 10px; height: 10px; border-radius: 5px; background: var(--bad); box-shadow: 0 0 0 2px var(--sf); }
