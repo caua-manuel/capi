@@ -100,7 +100,7 @@ export default {
         { ...inscricao, expirationTime: null },
         { subject: ORIGEM_DO_APP, publicKey, privateKey },
       );
-      const resposta = await fetch(inscricao.endpoint, { ...envio, redirect: 'error' });
+      const resposta = await fetch(inscricao.endpoint, { ...envio, redirect: 'manual' });
       await resposta.body?.cancel();
       if (resposta.status === 404 || resposta.status === 410) return responder(410);
       return responder(resposta.ok ? 204 : 502);
