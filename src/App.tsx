@@ -36,6 +36,10 @@ import { montarCalendario } from './motor/calendario';
 import { Calendario } from './telas/Calendario';
 import { fecharMes, mesParaFechar } from './motor/fechamento';
 import { Fechamento } from './telas/Fechamento';
+import { fazerCheckin } from './motor/checkin';
+import { CheckIn } from './telas/CheckIn';
+import { DiaDoPagamento } from './telas/DiaDoPagamento';
+import { Lembretes } from './telas/Lembretes';
 import { gravarOnboarding, lerOnboarding } from './repositorio/onboarding';
 import { Diagnostico } from './telas/Diagnostico';
 import { Onboarding } from './telas/Onboarding';
@@ -159,9 +163,17 @@ export function App() {
   // Fechamento mensal: o placar do mês passado. Só calcula quando a tela está aberta.
   const mesFechado = mesParaFechar(hoje());
   const placar = useMemo(
-    () => (rota === 'fechamento' && entradaDoMotor ? fecharMes(entradaDoMotor, mesFechado) : null),
+    () => ((rota === 'fechamento' || rota === 'checkin') && entradaDoMotor ? fecharMes(entradaDoMotor, mesFechado) : null),
     [rota, entradaDoMotor, mesFechado],
   );
+  const checkin = useMemo(() => (rota === 'checkin' && entradaDoMotor ? fazerCheckin(entradaDoMotor) : null), [rota, entradaDoMotor]);
+  const [pagamentosSeparados, setPagamentosSeparados] = useState<string[]>([]);
+  useEffect(() => { void lerAjuste<string[]>('pagamentos-separados').then((l) => setPagamentosSeparados(l ?? [])); }, []);
+  function separeiOPagamento() {
+    const lista = [...pagamentosSeparados, mes];
+    setPagamentosSeparados(lista);
+    void gravarAjuste('pagamentos-separados', lista);
+  }
   const [fechamentosComAporte, setFechamentosComAporte] = useState<string[]>([]);
   const [ultimoBackup, setUltimoBackup] = useState<string | undefined>();
   useEffect(() => {
@@ -279,7 +291,18 @@ export function App() {
           diasDesdeOBackup={ultimoBackup ? Math.max(0, Math.round((Date.parse(hoje()) - Date.parse(ultimoBackup)) / 86400000)) : null}
           aporteFeito={fechamentosComAporte.includes(placar.mes)} onVirarAporte={virarAporte} />
       )}
-      {rota === 'calendario' && calendario &&<Calendario calendario={calendario} hoje={hoje()} />}
+      {rota === 'checkin' && checkin && (
+        <CheckIn checkin={checkin} nomeDaCategoria={(id) => todas.find((c) => c.id === id)?.nome ?? 'Outros'}
+          onEditar={(l) => setFolha({ tipo: 'editar', lancamento: l })}
+          salvoDoMesPassado={placar && !placar.mesZero && placar.dinheiroSalvo > 0 ? placar : null}
+          aporteFeito={placar ? fechamentosComAporte.includes(placar.mes) : false} onVirarAporte={virarAporte} />
+      )}
+      {rota === 'dia-do-pagamento' && saida && (
+        <DiaDoPagamento mes={mes} guardarPorMes={saida.plano.guardarPorMes} aportes={saida.metas.escada}
+          jaSeparou={pagamentosSeparados.includes(mes)} onSeparei={separeiOPagamento} />
+      )}
+      {rota === 'lembretes' && <Lembretes />}
+      {rota === 'calendario' && calendario && <Calendario calendario={calendario} hoje={hoje()} />}
       {rota === 'parametros' &&<Parametros salvos={parametros} hoje={hoje()} onSalvar={salvarParametros} />}
       {rota === 'metas' && saida && (
         <Metas plano={saida.metas} metas={metas} renda={saida.diagnostico.renda} temDividas={saida.dividas !== null} dicas={saida.dicas}
@@ -326,7 +349,7 @@ export function App() {
           semPlano={onboarding === undefined} onMontarPlano={() => navegar('onboarding')}
           plano={saida?.plano ?? null} metas={metasNaHome} onMetas={() => navegar('metas')}
           previsao={saida?.previsao ?? null} onFatura={() => navegar('fatura')} avisos={saida?.avisos ?? []}
-          comprasParaLembrar={paraLembrar} onResolverCompra={resolverCompra} onPossoComprar={() => navegar('posso-comprar')} onCalendario={() => navegar('calendario')} onFecharMes={() => navegar('fechamento')}
+          comprasParaLembrar={paraLembrar} onResolverCompra={resolverCompra} onPossoComprar={() => navegar('posso-comprar')} onCalendario={() => navegar('calendario')} onFecharMes={() => navegar('fechamento')} onCheckin={() => navegar('checkin')}
           onLancar={() => setFolha({ tipo: 'novo' })} onEditar={(l) => setFolha({ tipo: 'editar', lancamento: l })} />
       )}
       {ehAba(rota) && <BarraDeBaixo ativa={rota} onLancar={() => setFolha({ tipo: 'novo' })} />}
