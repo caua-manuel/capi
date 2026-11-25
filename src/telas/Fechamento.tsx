@@ -98,12 +98,15 @@ export function Fechamento({ placar, temDados, nomeDaCategoria, assinaturasParec
           </section>
         )}
 
-        <section className="cartao" style={{ margin: '12px 0 0', display: 'flex', alignItems: 'center', gap: 12 }} aria-label="Backup">
-          <span className="ajuste-icone"><Icone nome="escudo" tamanho={19} traco={1.7} /></span>
-          <span className="ajuste-texto">
-            <span className="ajuste-titulo">Exportar backup</span>
-            <span className="ajuste-sub">{diasDesdeOBackup === null ? 'Você ainda não exportou' : `Último há ${diasDesdeOBackup} ${diasDesdeOBackup === 1 ? 'dia' : 'dias'}`}</span>
-          </span>
+        <section className="cartao" style={{ margin: '12px 0 0', padding: '4px 16px' }} aria-label="Backup">
+          <button type="button" className="linha-ajuste" onClick={() => navegar('backup')}>
+            <span className="ajuste-icone"><Icone nome="baixar" tamanho={19} traco={1.7} /></span>
+            <span className="ajuste-texto">
+              <span className="ajuste-titulo">Exportar backup</span>
+              <span className="ajuste-sub">{diasDesdeOBackup === null ? 'Você ainda não exportou' : `Último há ${diasDesdeOBackup} ${diasDesdeOBackup === 1 ? 'dia' : 'dias'}`}</span>
+            </span>
+            <span className="ajuste-seta"><Icone nome="seta" tamanho={16} /></span>
+          </button>
         </section>
 
         <section className="cartao" style={{ margin: '12px 0 0' }} aria-label={`Plano de ${proximo}`}>
