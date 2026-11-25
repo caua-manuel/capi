@@ -15,6 +15,7 @@ const abreviado = (mes: string) => maiuscula(nomeDoMes(mes)).slice(0, 3);
 const diaDaSemana = (data: string) => new Date(`${data}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
 
 function detalhe(c: Compromisso): string {
+  if (c.tipo === 'salario') return 'Entrada';
   if (c.tipo === 'anual') return 'Gasto anual';
   if (c.tipo === 'parcela') return c.parcela ? `Parcela ${c.parcela.atual}/${c.parcela.total}` : 'Parcela';
   if (c.tipo === 'recorrente') return 'Assinatura';
@@ -37,7 +38,7 @@ function DicaDoMesApertado({ calendario, hoje }: { calendario: CalendarioDoMotor
   const mes = calendario.meses.find((m) => m.apertado);
   if (!mes) return null;
   const anual = mes.compromissos.find((c) => c.tipo === 'anual' && c.caixinha);
-  const maior = [...mes.compromissos].sort((a, b) => b.valor - a.valor)[0];
+  const maior = mes.compromissos.filter((c) => c.tipo !== 'salario').sort((a, b) => b.valor - a.valor)[0];
   const nome = nomeDoMes(mes.mes);
   const mesDeHoje = nomeDoMes(hoje.slice(0, 7));
   return (
@@ -61,7 +62,7 @@ function DicaDoMesApertado({ calendario, hoje }: { calendario: CalendarioDoMotor
 /** Tela de número: sem Capi (DESIGN.md). */
 export function Calendario({ calendario, hoje }: Props) {
   const maior = Math.max(...calendario.meses.map((m) => m.total));
-  const vazio = calendario.meses.every((m) => m.compromissos.length === 0);
+  const vazio = calendario.meses.every((m) => m.compromissos.every((c) => c.tipo === 'salario'));
   return (
     <main className="tela">
       <header className="topo-simples">
@@ -96,7 +97,9 @@ export function Calendario({ calendario, hoje }: Props) {
                       {c.caixinha && <> · Caixinha <Valor centavos={c.caixinha.guardado} semCentavos />{c.caixinha.falta > 0 ? <>, faltam <Valor centavos={c.caixinha.falta} semCentavos /></> : null}</>}
                     </div>
                   </div>
-                  <span className="num compromisso-valor"><Valor centavos={c.valor} /></span>
+                  <span className="num compromisso-valor" style={c.tipo === 'salario' ? { color: 'var(--ok)' } : undefined}>
+                    {c.tipo === 'salario' && '+'}<Valor centavos={c.valor} />
+                  </span>
                 </li>
               ))}
             </ul>

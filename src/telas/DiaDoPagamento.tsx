@@ -5,10 +5,15 @@ import { Icone } from '../componentes/Icone';
 import { Valor } from './discreto';
 import { nomeDoMes } from './formato';
 import { navegar } from './rotas';
+import { dataDoSalario } from '../motor/salario';
 
 interface Props {
   /** AAAA-MM do mês do pagamento. */
   mes: string;
+  /** AAAA-MM-DD. */
+  hoje: string;
+  /** Dia do mês em que a renda cai, quando a pessoa informou. */
+  diaDoSalario?: number;
   guardarPorMes: Centavos;
   /** As Metas que recebem Aporte neste mês, na ordem da escada. */
   aportes: readonly MetaNaEscada[];
@@ -17,7 +22,8 @@ interface Props {
 }
 
 /** Tela de número: sem Capi (DESIGN.md). */
-export function DiaDoPagamento({ mes, guardarPorMes, aportes, jaSeparou, onSeparei }: Props) {
+export function DiaDoPagamento({ mes, hoje, diaDoSalario, guardarPorMes, aportes, jaSeparou, onSeparei }: Props) {
+  const salario = diaDoSalario ? dataDoSalario(hoje, diaDoSalario) : null;
   const comAporte = aportes.filter((m) => m.aporte > 0);
   return (
     <main className="tela tela-detalhe">
@@ -26,7 +32,18 @@ export function DiaDoPagamento({ mes, guardarPorMes, aportes, jaSeparou, onSepar
         <section className="cartao-destaque" style={{ margin: 0 }}>
           <div className="sub">Para guardar este mês</div>
           <div className="num numero-grande" style={{ overflowWrap: 'anywhere' }}><Valor centavos={guardarPorMes} /></div>
+          {salario && (
+            <div className="sub" style={{ marginTop: 8 }}>
+              {salario.ehHoje ? 'Seu salário cai hoje: separe antes de gastar.'
+                : `Seu salário caiu dia ${Number(salario.ultimo.slice(8, 10))} e cai de novo dia ${Number(salario.proximo.slice(8, 10))}, em ${salario.diasAteOProximo} ${salario.diasAteOProximo === 1 ? 'dia' : 'dias'}.`}
+            </div>
+          )}
         </section>
+        {!diaDoSalario && (
+          <section className="cartao" style={{ margin: '12px 0 0' }}>
+            <p className="texto-2" style={{ margin: 0 }}>Informe o dia em que seu salário cai em Ajustes, Suas respostas, e eu marco este ritual nessa data.</p>
+          </section>
+        )}
         {comAporte.length === 0 ? (
           <section className="cartao" style={{ margin: '12px 0 0' }}>
             <p className="texto-2" style={{ margin: 0 }}>Nenhuma Meta recebe Aporte neste mês. Crie uma em Metas para dar destino a esse dinheiro.</p>

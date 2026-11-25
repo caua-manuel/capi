@@ -65,6 +65,8 @@ export interface RespostasDoOnboarding {
     /** Renda dos últimos meses (até 6), quando varia. */
     ultimosMeses: Centavos[];
   };
+  /** Dia do mês em que a renda cai, 1 a 31 (opcional). */
+  diaDoSalario?: number;
   /** Pergunta 3. */
   trabalho: Trabalho;
   /** Pergunta 5. */

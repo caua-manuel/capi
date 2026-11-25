@@ -35,7 +35,7 @@ function Copiar({ endereco }: { endereco: string }) {
   );
 }
 
-export function Lembretes() {
+export function Lembretes({ diaDoSalario }: { diaDoSalario?: number }) {
   return (
     <main className="tela tela-detalhe">
       <Cabecalho linha1="Lembretes" linha2="pelo app Atalhos" onVoltar={() => navegar('ajustes')} />
@@ -55,7 +55,7 @@ export function Lembretes() {
         {LEMBRETES.map((l) => (
           <section key={l.rota} className="cartao" style={{ margin: '12px 0 0' }}>
             <h3 className="titulo">{l.titulo}</h3>
-            <p className="rotulo" style={{ margin: '2px 0 6px' }}>{l.quando}</p>
+            <p className="rotulo" style={{ margin: '2px 0 6px' }}>{l.rota === 'dia-do-pagamento' && diaDoSalario ? `Todo dia ${diaDoSalario} (o dia em que seu salário cai)` : l.quando}</p>
             <p style={{ margin: 0 }}>{l.texto}</p>
             <Copiar endereco={enderecoCompleto(l.rota)} />
           </section>
