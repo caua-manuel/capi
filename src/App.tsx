@@ -51,6 +51,7 @@ import { Diagnostico } from './telas/Diagnostico';
 import { Onboarding } from './telas/Onboarding';
 import { gravarRegra, lerRegras } from './repositorio/regras';
 import { Ajustes } from './telas/Ajustes';
+import { aparenciaSalva, aplicarAparencia, CHAVE_APARENCIA, guardarAparencia, ouvirTemaDoAparelho, type Aparencia } from './telas/aparencia';
 import { Atalho } from './telas/Atalho';
 import { Inicio, type MetaNaHome } from './telas/Inicio';
 import { NovoGasto, type PreenchimentoDoGasto } from './telas/NovoGasto';
@@ -84,6 +85,21 @@ export function App() {
   useEffect(() => {
     void lerAjuste<boolean>(CHAVE_MODO_DISCRETO).then((salvo) => setDiscreto(salvo ?? false));
   }, []);
+
+  const [aparencia, setAparencia] = useState<Aparencia>(aparenciaSalva);
+  useEffect(() => {
+    // O backup traz a escolha junto com os outros ajustes: ela vale sobre a cópia do aparelho.
+    void lerAjuste<Aparencia>(CHAVE_APARENCIA).then((salva) => { if (salva) { guardarAparencia(salva); setAparencia(salva); } });
+  }, []);
+  useEffect(() => {
+    aplicarAparencia(aparencia);
+    return aparencia === 'automatica' ? ouvirTemaDoAparelho(() => aplicarAparencia(aparencia)) : undefined;
+  }, [aparencia]);
+  function mudarAparencia(nova: Aparencia) {
+    setAparencia(nova);
+    guardarAparencia(nova);
+    void gravarAjuste(CHAVE_APARENCIA, nova);
+  }
 
   async function alternarDiscreto() {
     const novo = !discreto;
@@ -305,7 +321,7 @@ export function App() {
   return (
     <ProvedorDiscreto ligado={discreto !== false}>
       {rota === 'ajustes' && (
-        <Ajustes discreto={discreto === true} onAlternarDiscreto={alternarDiscreto} quantidadeDeFixos={fixos.length}
+        <Ajustes discreto={discreto === true} onAlternarDiscreto={alternarDiscreto} aparencia={aparencia} onMudarAparencia={mudarAparencia} quantidadeDeFixos={fixos.length}
           categoriasPadrao={todas.length - proprias.length} categoriasProprias={proprias.length}
           resumoDosParametros={resumoDosParametros(parametros.valores)}
           resumoDoBackup={ultimoBackup ? `Último há ${Math.max(0, Math.round((Date.parse(hoje()) - Date.parse(ultimoBackup)) / 86400000))} dias` : 'Você ainda não exportou'} />
@@ -396,7 +412,7 @@ export function App() {
       )}
       {ehAba(rota) && <BarraDeBaixo ativa={rota} onLancar={() => setFolha({ tipo: 'novo' })} />}
       {folha && (
-        <NovoGasto key={folha.tipo === 'editar' ? folha.lancamento.id : 'novo'} categorias={visiveis} regras={regras}
+        <NovoGasto plano={saida?.plano ?? null} key={folha.tipo === 'editar' ? folha.lancamento.id : 'novo'} categorias={visiveis} regras={regras}
           onCriarCategoria={criarCategoria}
           editando={folha.tipo === 'editar' ? folha.lancamento : undefined}
           preenchimento={folha.tipo === 'novo' ? folha.preenchimento : undefined}

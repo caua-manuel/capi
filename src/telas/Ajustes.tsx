@@ -1,9 +1,12 @@
 import type { ReactNode } from 'react';
 import { Icone, type NomeDoIcone } from '../componentes/Icone';
 import { navegar, type Rota } from './rotas';
+import type { Aparencia } from './aparencia';
 
 interface Props {
   discreto: boolean;
+  aparencia: Aparencia;
+  onMudarAparencia: (a: Aparencia) => void;
   onAlternarDiscreto: () => void;
   quantidadeDeFixos: number;
   categoriasPadrao: number;
@@ -46,7 +49,7 @@ function Grupo({ titulo, children }: { titulo: string; children: ReactNode }) {
   );
 }
 
-export function Ajustes({ discreto, onAlternarDiscreto, quantidadeDeFixos, categoriasPadrao, categoriasProprias, resumoDosParametros, resumoDoBackup }: Props) {
+export function Ajustes({ discreto, aparencia, onMudarAparencia, onAlternarDiscreto, quantidadeDeFixos, categoriasPadrao, categoriasProprias, resumoDosParametros, resumoDoBackup }: Props) {
   const itensDoPlano: Item[] = [
     { rota: 'onboarding', icone: 'lapis', titulo: 'Suas respostas', descricao: 'Renda, moradia, fixos, dívidas e objetivos' },
     { rota: 'fixos', icone: 'calendario', titulo: 'Fixos', descricao: quantidadeDeFixos === 0 ? 'Nenhum cadastrado ainda' : quantidadeDeFixos === 1 ? '1 item, entra sozinho todo mês' : `${quantidadeDeFixos} itens, entram sozinhos todo mês` },
@@ -72,6 +75,17 @@ export function Ajustes({ discreto, onAlternarDiscreto, quantidadeDeFixos, categ
         <Linha icone="olhoFechado" titulo="Modo discreto" descricao="Esconde os valores"
           fim={<input type="checkbox" role="switch" className="interruptor" aria-label="Modo discreto" checked={discreto} onChange={onAlternarDiscreto} />} />
         <Linha icone="escudo" verde titulo="Dados só neste celular" descricao="Sem login e sem servidor" />
+      </Grupo>
+
+      <Grupo titulo="Aparência">
+        <div className="linha-ajuste" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
+          <span className="ajuste-sub">Claro é o padrão. O escuro é para quem prefere usar à noite.</span>
+          <div className="segmentado" role="radiogroup" aria-label="Aparência">
+            {([['automatica', 'Automática'], ['clara', 'Clara'], ['escura', 'Escura']] as const).map(([id, nome]) => (
+              <button key={id} type="button" role="radio" aria-checked={aparencia === id} onClick={() => onMudarAparencia(id)}>{nome}</button>
+            ))}
+          </div>
+        </div>
       </Grupo>
 
       <Grupo titulo="Atalhos do iPhone">

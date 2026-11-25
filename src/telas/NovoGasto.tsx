@@ -6,7 +6,8 @@ import type { Lancamento, OrigemDoLancamento } from '../dominio/lancamento';
 import { lerLancamento, type RegrasDeEstabelecimento } from '../leitor/leitor';
 import { Icone } from '../componentes/Icone';
 import { Valor, useModoDiscreto } from './discreto';
-import { centavosParaTexto, hoje, rotuloDaData } from './formato';
+import { centavosParaTexto, hoje, mesDe, rotuloDaData } from './formato';
+import { tetoDepoisDoGasto, type Plano } from '../motor/plano';
 
 export interface PreenchimentoDoGasto {
   texto: string;
@@ -14,6 +15,8 @@ export interface PreenchimentoDoGasto {
 }
 
 interface Props {
+  /** Plano do mês, para mostrar como fica o Teto da Categoria. */
+  plano?: Plano | null;
   /** Categorias que aparecem nos chips (as escondidas ficam de fora). */
   categorias: readonly Categoria[];
   regras: RegrasDeEstabelecimento;
@@ -27,7 +30,7 @@ interface Props {
   onCriarCategoria: (nome: string, grupo: Grupo) => Promise<string>;
 }
 
-export function NovoGasto({ categorias, regras, editando, preenchimento, onSalvar, onApagar, onFechar, onCriarCategoria }: Props) {
+export function NovoGasto({ plano, categorias, regras, editando, preenchimento, onSalvar, onApagar, onFechar, onCriarCategoria }: Props) {
   const [criandoCategoria, setCriandoCategoria] = useState(false);
   const discreto = useModoDiscreto();
   const [focado, setFocado] = useState(false);
@@ -43,6 +46,12 @@ export function NovoGasto({ categorias, regras, editando, preenchimento, onSalva
   const leitura = useMemo(() => lerLancamento(texto, categorias, regras), [texto, categorias, regras]);
   const categoriaId = categoriaEscolhida ?? leitura.categoriaId;
   const pode = leitura.valor !== null && leitura.valor > 0 && categoriaId !== null && !salvando;
+
+  const teto = useMemo(() => {
+    if (!plano || categoriaId === null || !leitura.valor) return null;
+    const mesmoTeto = editando && editando.categoriaId === categoriaId && mesDe(editando.data) === plano.mes;
+    return tetoDepoisDoGasto(plano, categoriaId, leitura.valor, { valorAnterior: mesmoTeto ? editando.valor : 0, mesDaCompra: mesDe(data) });
+  }, [plano, categoriaId, leitura.valor, editando, data]);
 
   useEffect(() => {
     if (!editando && !preenchimento) campo.current?.focus();
@@ -109,6 +118,12 @@ export function NovoGasto({ categorias, regras, editando, preenchimento, onSalva
             ))}
             <button type="button" className="chip chip-novo" onClick={() => setCriandoCategoria(true)}>+ Nova categoria</button>
           </div>
+          {teto && categoriaId !== null && (
+            <p className={`linha-teto ${teto.estado}`} aria-live="polite">
+              {categorias.find((c) => c.id === categoriaId)?.nome ?? 'Categoria'} vai para <Valor centavos={teto.gastoDepois} semCentavos /> de <Valor centavos={teto.teto} semCentavos />
+              {teto.estado === 'estourado' ? ' (passa do Teto)' : ''}
+            </p>
+          )}
           {criandoCategoria && (
             <FormNovaCategoria rotuloDoBotao="Criar e usar"
               nomeJaExiste={(nome) => categorias.some((c) => normalizar(c.nome) === normalizar(nome))}
