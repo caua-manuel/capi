@@ -13,8 +13,25 @@ cleanupOutdatedCaches();
 registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html')));
 
 self.addEventListener('push', (evento) => {
+  const conteudo = evento.data?.text();
+  let body = conteudo || 'Toque para abrir o Capi';
+  let tag: string | undefined;
+  if (conteudo?.startsWith('{')) {
+    try {
+      const dados = JSON.parse(conteudo) as { id?: unknown; texto?: unknown } | null;
+      if (typeof dados?.id === 'string' && typeof dados.texto === 'string') {
+        body = dados.texto;
+        tag = dados.id;
+      } else {
+        body = 'Toque para abrir o Capi';
+      }
+    } catch {
+      body = 'Toque para abrir o Capi';
+    }
+  }
   evento.waitUntil(self.registration.showNotification('Capi', {
-    body: evento.data?.text() || 'Toque para abrir o Capi',
+    body,
+    ...(tag ? { tag } : {}),
     icon: new URL('icone-192.png', self.registration.scope).href,
   }));
 });
@@ -25,7 +42,11 @@ self.addEventListener('notificationclick', (evento) => {
     const escopo = self.registration.scope;
     const janelas = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     const janela = janelas.find(({ url }) => url.startsWith(escopo));
-    if (janela) return janela.focus();
-    return self.clients.openWindow(escopo);
+    if (janela) {
+      await janela.focus();
+      janela.postMessage({ tipo: 'buscar-pendentes-do-atalho' });
+    } else {
+      await self.clients.openWindow(escopo);
+    }
   })());
 });

@@ -7,6 +7,7 @@ import { gravarAjuste, lerAjuste } from './repositorio/ajustes';
 import type { Lancamento } from './dominio/lancamento';
 import type { RegrasDeEstabelecimento } from './leitor/leitor';
 import { lerUrlDeEntrada } from './leitor/url';
+import { buscarPendentesDoAtalho, lerCodigoDoAparelho, ouvirMudancasDoCodigo, type PendenteDoAtalho } from './leitor/pushDoAtalho';
 import { apagarComSeguintes, listarLancamentosDesde, listarLancamentosDoMes, restaurarLancamentos, salvarLancamento } from './repositorio/lancamentos';
 import { AvisoDeDesfazer } from './componentes/AvisoDeDesfazer';
 import type { RespostasDoOnboarding } from './dominio/onboarding';
@@ -79,6 +80,14 @@ export function App() {
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
   const [regras, setRegras] = useState<RegrasDeEstabelecimento>({});
   const [folha, setFolha] = useState<Folha>(folhaDaUrl);
+  const [pendentesDoAtalho, setPendentesDoAtalho] = useState<PendenteDoAtalho[]>([]);
+  const pendenteAberto = folha ? undefined : pendentesDoAtalho[0];
+  const folhaAberta: Folha = folha ?? (pendenteAberto ? {
+    tipo: 'novo', preenchimento: {
+      origem: 'applepay', pendente: pendenteAberto,
+      texto: `${centavosParaTexto(pendenteAberto.valor)} ${pendenteAberto.loja}`,
+    },
+  } : null);
   const [proprias, setProprias] = useState<Categoria[]>([]);
   const [escondidas, setEscondidas] = useState<string[]>([]);
   const { todas, visiveis } = useMemo(() => montarCategorias(proprias, escondidas), [proprias, escondidas]);
@@ -123,6 +132,53 @@ export function App() {
     const aoNavegar = () => setRota(rotaAtual());
     window.addEventListener('popstate', aoNavegar);
     return () => window.removeEventListener('popstate', aoNavegar);
+  }, []);
+
+  useEffect(() => {
+    const { standaloneDoIOS, modoDeExibicaoStandalone } = lerAmbiente();
+    if (!standaloneDoIOS && !modoDeExibicaoStandalone) return;
+
+    let ativo = true;
+    let codigo = lerCodigoDoAparelho();
+    let ultimaBusca: Promise<PendenteDoAtalho[]> | undefined;
+    const buscar = () => {
+      if (!codigo || !navigator.onLine || document.visibilityState === 'hidden') return;
+      const codigoDaBusca = codigo;
+      const busca = buscarPendentesDoAtalho(codigoDaBusca);
+      if (busca === ultimaBusca) return;
+      ultimaBusca = busca;
+      void busca.then((recebidos) => {
+        if (!ativo || codigoDaBusca !== codigo || recebidos.length === 0) return;
+        setPendentesDoAtalho((fila) => {
+          const ids = new Set(fila.map(({ id }) => id));
+          return [...fila, ...recebidos.filter(({ id }) => !ids.has(id))];
+        });
+      }).catch(() => { /* A próxima abertura ou volta da rede tenta de novo. */ });
+    };
+    const aoMudarCodigo = () => {
+      const novo = lerCodigoDoAparelho();
+      if (novo === codigo) return;
+      codigo = novo;
+      setPendentesDoAtalho([]);
+      buscar();
+    };
+    const aoTocarNaNotificacao = (evento: MessageEvent) => {
+      if (evento.data?.tipo === 'buscar-pendentes-do-atalho') buscar();
+    };
+    const pararDeOuvir = ouvirMudancasDoCodigo(aoMudarCodigo);
+    window.addEventListener('focus', buscar);
+    window.addEventListener('online', buscar);
+    document.addEventListener('visibilitychange', buscar);
+    navigator.serviceWorker?.addEventListener('message', aoTocarNaNotificacao);
+    buscar();
+    return () => {
+      ativo = false;
+      pararDeOuvir();
+      window.removeEventListener('focus', buscar);
+      window.removeEventListener('online', buscar);
+      document.removeEventListener('visibilitychange', buscar);
+      navigator.serviceWorker?.removeEventListener('message', aoTocarNaNotificacao);
+    };
   }, []);
 
   // Nulo enquanto carrega; indefinido quando ainda não respondeu.
@@ -317,6 +373,7 @@ export function App() {
     for (const parcela of demais) await salvarLancamento(parcela);
     // A Categoria escolhida para a Loja vira Regra de estabelecimento.
     await gravarRegra(lancamento.loja, lancamento.categoriaId);
+    if (pendenteAberto) setPendentesDoAtalho((fila) => fila.filter(({ id }) => id !== pendenteAberto.id));
     setFolha(null);
     await recarregar();
   }
@@ -337,7 +394,11 @@ export function App() {
   }
   const expirarDesfazer = useCallback(() => setApagados(null), []);
 
-  const fechar = useCallback(() => setFolha(null), []);
+  const idDoPendenteAberto = pendenteAberto?.id;
+  const fechar = useCallback(() => {
+    if (idDoPendenteAberto) setPendentesDoAtalho((fila) => fila.filter(({ id }) => id !== idDoPendenteAberto));
+    setFolha(null);
+  }, [idDoPendenteAberto]);
 
   // Instalar antes de começar (ADR 0002): no Safari do iPhone os dados não passam para o app instalado.
   const mostraInstalacao = rota === 'instalar' || (instalacaoDispensada === false && rota !== 'backup');
@@ -448,12 +509,13 @@ export function App() {
           onLancar={() => setFolha({ tipo: 'novo' })} onEditar={(l) => setFolha({ tipo: 'editar', lancamento: l })} />
       )}
       {ehAba(rota) && <BarraDeBaixo ativa={rota} onLancar={() => setFolha({ tipo: 'novo' })} />}
-      {apagados && !folha && <AvisoDeDesfazer chave={apagados.chave} onDesfazer={() => void desfazerApagar()} onExpirar={expirarDesfazer} />}
-      {folha && (
-        <NovoGasto plano={saida?.plano ?? null} key={folha.tipo === 'editar' ? folha.lancamento.id : 'novo'} categorias={visiveis} regras={regras}
+      {apagados && !folhaAberta && <AvisoDeDesfazer chave={apagados.chave} onDesfazer={() => void desfazerApagar()} onExpirar={expirarDesfazer} />}
+      {folhaAberta && (
+        <NovoGasto plano={saida?.plano ?? null} key={folhaAberta.tipo === 'editar' ? folhaAberta.lancamento.id : (idDoPendenteAberto ?? 'novo')} categorias={visiveis} regras={regras}
           onCriarCategoria={criarCategoria}
-          editando={folha.tipo === 'editar' ? folha.lancamento : undefined}
-          preenchimento={folha.tipo === 'novo' ? folha.preenchimento : undefined}
+          editando={folhaAberta.tipo === 'editar' ? folhaAberta.lancamento : undefined}
+          preenchimento={folhaAberta.tipo === 'novo' ? folhaAberta.preenchimento : undefined}
+          outrosPendentes={pendenteAberto ? pendentesDoAtalho.length - 1 : 0}
           onSalvar={salvar} onApagar={apagar} onFechar={fechar} />
       )}
     </ProvedorDiscreto>

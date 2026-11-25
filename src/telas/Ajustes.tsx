@@ -91,7 +91,7 @@ export function Ajustes({ discreto, podeInstalar, aparencia, onMudarAparencia, o
       </Grupo>
 
       <Grupo titulo="Atalhos do iPhone">
-        <Linha icone="raio" titulo="Lançar pelo Apple Pay" descricao="Abre o app preenchido ao pagar" fim={seta} onClick={() => navegar('atalho')} />
+        <Linha icone="raio" titulo="Lançar pelo Apple Pay" descricao="Receba uma notificação para categorizar ao pagar" fim={seta} onClick={() => navegar('atalho')} />
         {podeInstalar && (
           <Linha icone="casa" titulo="Instalar na Tela de Início" descricao="Os dados ficam no app instalado, não no navegador" fim={seta} onClick={() => navegar('instalar')} />
         )}

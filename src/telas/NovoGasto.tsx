@@ -3,7 +3,8 @@ import type { Categoria, Grupo } from '../dominio/categorias';
 import { FormNovaCategoria } from '../componentes/FormNovaCategoria';
 import { normalizar } from '../leitor/normalizar';
 import type { Lancamento, OrigemDoLancamento } from '../dominio/lancamento';
-import { lerLancamento, type RegrasDeEstabelecimento } from '../leitor/leitor';
+import { lerLancamento, sugerirCategoria, type LeituraDeLancamento, type RegrasDeEstabelecimento } from '../leitor/leitor';
+import type { PendenteDoAtalho } from '../leitor/pushDoAtalho';
 import { Icone } from '../componentes/Icone';
 import { Valor, useModoDiscreto } from './discreto';
 import { centavosParaTexto, hoje, mesDe, rotuloDaData } from './formato';
@@ -13,6 +14,7 @@ import { gerarParcelas } from '../motor/parcelas';
 export interface PreenchimentoDoGasto {
   texto: string;
   origem: OrigemDoLancamento;
+  pendente?: PendenteDoAtalho;
 }
 
 interface Props {
@@ -24,6 +26,7 @@ interface Props {
   /** Lançamento em edição; sem ele, é um Novo gasto. */
   editando?: Lancamento;
   preenchimento?: PreenchimentoDoGasto;
+  outrosPendentes?: number;
   /** `demais` são as Parcelas 2 em diante, quando a compra é parcelada. */
   onSalvar: (lancamento: Lancamento, demais?: Lancamento[]) => Promise<void>;
   onApagar?: (id: string) => Promise<void>;
@@ -32,7 +35,7 @@ interface Props {
   onCriarCategoria: (nome: string, grupo: Grupo) => Promise<string>;
 }
 
-export function NovoGasto({ plano, categorias, regras, editando, preenchimento, onSalvar, onApagar, onFechar, onCriarCategoria }: Props) {
+export function NovoGasto({ plano, categorias, regras, editando, preenchimento, outrosPendentes = 0, onSalvar, onApagar, onFechar, onCriarCategoria }: Props) {
   const [criandoCategoria, setCriandoCategoria] = useState(false);
   const discreto = useModoDiscreto();
   const [focado, setFocado] = useState(false);
@@ -45,11 +48,18 @@ export function NovoGasto({ plano, categorias, regras, editando, preenchimento, 
   const campo = useRef<HTMLInputElement>(null);
   const origem: OrigemDoLancamento = editando?.origem ?? preenchimento?.origem ?? 'manual';
 
-  const leitura = useMemo(() => lerLancamento(texto, categorias, regras), [texto, categorias, regras]);
+  const leitura = useMemo<LeituraDeLancamento>(() => {
+    if (preenchimento?.pendente && texto === preenchimento.texto) {
+      const { valor, loja } = preenchimento.pendente;
+      return { valor, loja, categoriaId: sugerirCategoria(loja, categorias, regras) };
+    }
+    return lerLancamento(texto, categorias, regras);
+  }, [texto, categorias, regras, preenchimento]);
   const categoriaId = categoriaEscolhida ?? leitura.categoriaId;
   // Parcelar só vale para gasto novo: editar mexe numa Parcela só.
   const parcelas = !editando && leitura.parcelas ? leitura.parcelas : 1;
-  const pode = leitura.valor !== null && leitura.valor > 0 && categoriaId !== null && !salvando;
+  const faltaConfirmarCategoria = Boolean(preenchimento?.pendente) && categoriaEscolhida === null;
+  const pode = leitura.valor !== null && leitura.valor > 0 && categoriaId !== null && !faltaConfirmarCategoria && !salvando;
 
   const teto = useMemo(() => {
     if (!plano || categoriaId === null || !leitura.valor) return null;
@@ -94,6 +104,9 @@ export function NovoGasto({ plano, categorias, regras, editando, preenchimento, 
         {origem === 'applepay' && (
           <span className="selo-applepay"><Icone nome="raio" tamanho={14} />Preenchido pelo Apple Pay</span>
         )}
+        {outrosPendentes > 0 && (
+          <span className="rotulo" role="status">mais {outrosPendentes} {outrosPendentes === 1 ? 'pagamento' : 'pagamentos'} para categorizar</span>
+        )}
 
         <div style={{ textAlign: 'center' }}>
           <img className="capi" src={`${import.meta.env.BASE_URL}capi/capi-joinha.png`} alt="" style={{ height: 92, margin: '0 auto 4px' }} />
@@ -122,6 +135,7 @@ export function NovoGasto({ plano, categorias, regras, editando, preenchimento, 
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <span className="rotulo" style={{ padding: '0 4px', fontSize: 13 }}>Categoria</span>
+          {faltaConfirmarCategoria && <span className="rotulo">Toque em uma Categoria para confirmar.</span>}
           <div className="chips">
             {categorias.map((c) => (
               <button key={c.id} type="button" className="chip" aria-pressed={c.id === categoriaId}

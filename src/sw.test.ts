@@ -41,15 +41,29 @@ it('mostra um texto padrão quando o push chega sem dados', async () => {
   expect(showNotification).toHaveBeenCalledWith('Capi', expect.objectContaining({ body: 'Toque para abrir o Capi' }));
 });
 
+it('mostra o pagamento com seu identificador para manter as notificações distintas', async () => {
+  const texto = 'R$ 42,50 · Mercadinho — toque para categorizar';
+  const data = { text: () => JSON.stringify({ id: 'pendente-1', texto }) };
+  await disparar('push', { data });
+  expect(showNotification).toHaveBeenCalledWith('Capi', { body: texto, icon: `${escopo}icone-192.png`, tag: 'pendente-1' });
+});
+
+it('omite dados inválidos da notificação', async () => {
+  await disparar('push', { data: { text: () => '{"id":"pendente-1"}' } });
+  expect(showNotification).toHaveBeenCalledWith('Capi', { body: 'Toque para abrir o Capi', icon: `${escopo}icone-192.png` });
+});
+
 it('fecha a notificação e foca uma janela do Capi que já está aberta', async () => {
   const close = vi.fn();
   const focus = vi.fn();
   const outraJanela = vi.fn();
-  matchAll.mockResolvedValue([{ url: `${escopo}fora`, focus } , { url: escopo.replace('/capi/', '/outro/'), focus: outraJanela }]);
+  const postMessage = vi.fn();
+  matchAll.mockResolvedValue([{ url: `${escopo}atalho`, focus, postMessage }, { url: escopo.replace('/capi/', '/outro/'), focus: outraJanela }]);
   await disparar('notificationclick', { notification: { close } });
   expect(close).toHaveBeenCalledOnce();
   expect(matchAll).toHaveBeenCalledWith({ type: 'window', includeUncontrolled: true });
   expect(focus).toHaveBeenCalledOnce();
+  expect(postMessage).toHaveBeenCalledExactlyOnceWith({ tipo: 'buscar-pendentes-do-atalho' });
   expect(outraJanela).not.toHaveBeenCalled();
   expect(openWindow).not.toHaveBeenCalled();
 });

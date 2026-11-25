@@ -1,12 +1,15 @@
 # Ponte do Atalho do Apple Pay
 
-A prova verifica se tocar em uma notificação de teste abre o Capi instalado no iPhone com iOS 16.4 ou posterior. O Worker aceita chamadas da origem do GitHub Pages do Capi e envia notificações pelo serviço da Apple.
+O Atalhos envia um pagamento com `POST /pagamento` e `Authorization: Bearer <código>`. O Worker guarda o Pendente e responde antes do envio pelo Web Push da Apple. O Capi instalado busca a fila em `GET /pendentes` e pode apagar a inscrição e a fila com `POST /desligar`. As rotas do app aceitam somente a origem do GitHub Pages do Capi. O POST nativo do Atalhos também funciona sem o cabeçalho `Origin`.
 
 ## Privacidade
 
 - O KV usa o hash SHA-256 do Código do aparelho como única chave da inscrição. O valor contém apenas o `endpoint` e as chaves `p256dh` e `auth` que o Web Push exige.
 - IP, user-agent, data de acesso e Código do aparelho ficam fora do KV e dos logs do Worker. A observabilidade, os logs de invocação e os traces estão desligados no `wrangler.toml`.
-- Nesta prova, a ponte recebe inscrições e pedidos de teste. A etapa de pagamentos depende da confirmação no iPhone. Nela, Pendentes não lidos expiram no KV em até 48 horas e os lidos são apagados na leitura.
+- Pendentes guardam apenas valor em centavos e Loja. A chave no KV combina o hash do código e um identificador aleatório. Cada registro expira em 48 horas. Uma leitura retira os registros da fila uma única vez e apaga as respectivas chaves. Se o KV falhar na exclusão, um alarme repete a limpeza e o TTL continua valendo.
+- Um Durable Object por hash serializa leituras e exclusões. Seu estado temporário contém as referências da fila, um contador por hora e uma marca de revogação por até 48 horas para bloquear dados antigos em cache. A marca é mantida se a exclusão da inscrição precisar de nova tentativa. O limite é de 60 chamadas por hora e 200 Pendentes por código. Desligar continua disponível quando o código atinge o limite.
+- A borda limita cada rota a aproximadamente 120 chamadas por minuto por região, usando apenas o nome da rota como chave.
+- Cabeçalho, código, IP, user-agent e dados de pagamento ficam fora dos logs. O valor e a Loja aparecem na notificação recebida no iPhone.
 
 ## Publicação no plano grátis
 
@@ -19,7 +22,7 @@ npx wrangler deploy
 npm run configurar-vapid
 ```
 
-O deploy provisiona o KV da inscrição automaticamente. O Wrangler pode escrever o ID do KV na cópia local de `wrangler.toml`. O script de VAPID entrega o par diretamente a `wrangler secret put VAPID` e imprime somente a chave pública. O par fica no cofre de secrets do Worker.
+O deploy provisiona os namespaces KV e o Durable Object SQLite no plano grátis. O Wrangler pode escrever os IDs do KV na cópia local de `wrangler.toml`. Em atualização de um Worker existente, `npx wrangler deploy` preserva o secret VAPID. Na primeira publicação, `npm run configurar-vapid` entrega o par diretamente a `wrangler secret put VAPID` e imprime somente a chave pública. O par fica no cofre de secrets do Worker.
 
 Nos **Settings → Secrets and variables → Actions → Variables** do repositório do Capi, configure `VITE_PONTE_APPLE_PAY_URL` com a URL `workers.dev` impressa pelo deploy e `VITE_VAPID_CHAVE_PUBLICA` com a chave pública impressa pelo script. Publique o app com o workflow **Verificações e GitHub Pages**, a partir da `main`.
 

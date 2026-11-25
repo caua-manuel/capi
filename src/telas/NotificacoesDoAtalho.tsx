@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { chavePublicaDoAtalho, enviarParaPonte, lerCodigoDoAparelho, obterCodigoDoAparelho } from '../leitor/pushDoAtalho';
+import { apagarCodigoDoAparelho, chavePublicaDoAtalho, confirmarCodigoDoAparelho, desligarAtalho, enviarParaPonte, lerCodigoDoAparelho, obterCodigoDoAparelho } from '../leitor/pushDoAtalho';
 import { lerAmbiente } from './instalacao';
 
 export function NotificacoesDoAtalho() {
@@ -27,6 +27,21 @@ export function NotificacoesDoAtalho() {
     return () => { visivel = false; };
   }, [instalado, suportaPush, chavePublica]);
 
+  async function inscrever(novaInscricao: PushSubscription) {
+    const codigoDoAparelho = obterCodigoDoAparelho();
+    const status = await enviarParaPonte('inscrever', codigoDoAparelho, novaInscricao);
+    if (status === 409) {
+      apagarCodigoDoAparelho();
+      setCodigo(null);
+      setMensagem('O código anterior foi desativado. Toque em Ativar notificações para criar um novo.');
+      return false;
+    }
+    if (status !== 204) throw new Error('Inscrição recusada');
+    confirmarCodigoDoAparelho(codigoDoAparelho);
+    setCodigo(codigoDoAparelho);
+    return true;
+  }
+
   async function ativar() {
     if (!registro || !chavePublica) return;
     setOcupado(true);
@@ -43,15 +58,34 @@ export function NotificacoesDoAtalho() {
       // A primeira inscrição precisa começar no gesto do toque, antes de aguardar qualquer operação.
       const novaInscricao = inscricao ?? await registro.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: chavePublica });
       setInscricao(novaInscricao);
-      const codigoDoAparelho = obterCodigoDoAparelho();
-      const status = await enviarParaPonte('inscrever', codigoDoAparelho, novaInscricao);
-      if (status !== 204) throw new Error('Inscrição recusada');
-      setCodigo(codigoDoAparelho);
-      setMensagem('Notificações ativadas. Toque em Enviar teste.');
+      if (await inscrever(novaInscricao)) setMensagem('Notificações ativadas. Toque em Enviar teste.');
     } catch {
       setMensagem(Notification.permission === 'denied'
         ? 'Permita as notificações do Capi nos Ajustes do iPhone e tente novamente.'
         : 'O Capi não conseguiu ativar as notificações. Tente novamente.');
+    } finally {
+      setOcupado(false);
+    }
+  }
+
+  async function desligarOuTrocar(trocar: boolean) {
+    if (!codigo || (trocar && !inscricao)) return;
+    setOcupado(true);
+    setMensagem('');
+    let desligado = false;
+    try {
+      await desligarAtalho(codigo);
+      apagarCodigoDoAparelho();
+      setCodigo(null);
+      desligado = true;
+      if (trocar && inscricao) {
+        if (await inscrever(inscricao)) setMensagem('Novo código ativo. Atualize o código na automação do Atalhos.');
+      } else {
+        setMensagem('Atalho desligado. Inscrição e pagamentos pendentes apagados do servidor.');
+      }
+    } catch {
+      setMensagem(desligado ? 'Toque em Ativar notificações para terminar de gerar o novo código.'
+        : 'O Capi não conseguiu confirmar a exclusão no servidor. Tente novamente com rede.');
     } finally {
       setOcupado(false);
     }
@@ -86,14 +120,21 @@ export function NotificacoesDoAtalho() {
 
   return (
     <section className="cartao" aria-labelledby="notificacoes-do-atalho" style={{ marginBottom: 16 }}>
-      <h2 id="notificacoes-do-atalho" className="titulo">Notificações de teste</h2>
+      <h2 id="notificacoes-do-atalho" className="titulo">{codigo ? 'Apple Pay ligado' : 'Apple Pay desligado'}</h2>
       {indisponivel ? <p className="texto-2" style={{ marginBottom: 0 }}>{indisponivel}</p> : (
         <>
-          <p className="texto-2">Envie uma notificação e toque nela para abrir o Capi instalado.</p>
+          <p className="texto-2">A ponte guarda o valor e a Loja só até o Capi ler, por até 48 horas. O valor e a Loja aparecem na notificação.</p>
           <div className="modelo-url">
             <button type="button" className="chip" disabled={!registro || ocupado} onClick={ativar}>Ativar notificações</button>
             <button type="button" className="chip" disabled={!inscricao || !codigo || ocupado} onClick={testar}>Enviar teste</button>
+            {codigo && (
+              <>
+                <button type="button" className="chip" disabled={!inscricao || ocupado} onClick={() => desligarOuTrocar(true)}>Gerar novo código</button>
+                <button type="button" className="chip" disabled={ocupado} onClick={() => desligarOuTrocar(false)}>Desligar e apagar do servidor</button>
+              </>
+            )}
           </div>
+          {codigo && <p className="rotulo">Trocar o código também apaga os pagamentos pendentes do código anterior.</p>}
           <p className="rotulo" role="status" style={{ marginBottom: 0 }}>{mensagem}</p>
         </>
       )}

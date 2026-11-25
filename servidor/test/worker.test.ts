@@ -1,5 +1,5 @@
 import { Buffer } from 'node:buffer';
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { build } from 'esbuild';
 import { convertV4MiniflareOptions, Miniflare, Response as RespostaDoSimulador } from 'miniflare';
 import { afterAll, beforeAll, expect, it, vi } from 'vitest';
@@ -11,10 +11,14 @@ const enviarPush = vi.fn<(request: Request) => Promise<RespostaDoSimulador>>();
 let simulador: Miniflare;
 
 beforeAll(async () => {
-  const { outputFiles } = await build({ entryPoints: ['src/worker.ts'], bundle: true, write: false, format: 'esm' });
+  const { outputFiles } = await build({
+    entryPoints: ['src/worker.ts'], bundle: true, write: false, format: 'esm', external: ['cloudflare:workers'],
+  });
   simulador = new Miniflare(convertV4MiniflareOptions({
     name: 'ponte', modules: true, script: outputFiles[0].text, compatibilityDate: '2026-11-25',
-    kvNamespaces: ['INSCRICOES'], bindings: { VAPID: JSON.stringify(CHAVES_DE_TESTE) },
+    kvNamespaces: ['INSCRICOES', 'PENDENTES'], bindings: { VAPID: JSON.stringify(CHAVES_DE_TESTE) },
+    durableObjects: { COORDENACAO: { className: 'CoordenacaoDoAtalho', useSQLite: true } },
+    ratelimits: { LIMITE_POR_ROTA: { namespace_id: '682025', simple: { limit: 120, period: 60 } } },
     outboundService: (request) => enviarPush(request as unknown as Request),
   }));
 });
@@ -27,6 +31,30 @@ function postar(rota: string, corpo: unknown, origem = ORIGEM) {
     headers: { Origin: origem, 'Content-Type': 'application/json', 'User-Agent': 'Teste', 'CF-Connecting-IP': '192.0.2.1' },
     body: JSON.stringify(corpo),
   });
+}
+
+const hashDoTeste = (codigo: string) => createHash('sha256').update(codigo).digest('hex');
+
+function pagar(codigo: string, corpo: unknown, origin?: string) {
+  return simulador.dispatchFetch(`${URL_DA_PONTE}/pagamento`, {
+    method: 'POST', headers: {
+      Authorization: `Bearer ${codigo}`, 'Content-Type': 'application/json', ...(origin ? { Origin: origin } : {}),
+    }, body: JSON.stringify(corpo),
+  });
+}
+
+function pendentes(codigo: string, origin = ORIGEM) {
+  return simulador.dispatchFetch(`${URL_DA_PONTE}/pendentes`, { headers: { Origin: origin, Authorization: `Bearer ${codigo}` } });
+}
+
+function desligar(codigo: string) {
+  return simulador.dispatchFetch(`${URL_DA_PONTE}/desligar`, { method: 'POST', headers: { Origin: ORIGEM, Authorization: `Bearer ${codigo}` } });
+}
+
+async function inscrever(): Promise<string> {
+  const codigo = novoCodigo();
+  expect((await postar('/inscrever', { codigo, subscription: INSCRICAO_DE_TESTE })).status).toBe(204);
+  return codigo;
 }
 
 it('guarda só o endereço e as chaves da inscrição sob o hash do Código do aparelho', async () => {
@@ -52,6 +80,9 @@ it('recusa outra origem, código inválido, corpo grande e endereço fora do ser
   expect((await postar('/inscrever', { ...corpo, excesso: 'A'.repeat(4096) })).status).toBe(400);
   expect((await postar('/inscrever', {
     ...corpo, subscription: { ...INSCRICAO_DE_TESTE, endpoint: 'https://web.push.apple.com.example.org/' },
+  })).status).toBe(400);
+  expect((await postar('/inscrever', {
+    ...corpo, subscription: { ...INSCRICAO_DE_TESTE, keys: { ...INSCRICAO_DE_TESTE.keys, p256dh: `B${'A'.repeat(86)}` } },
   })).status).toBe(400);
 });
 
@@ -97,3 +128,102 @@ it('recusa redirecionamento do provedor de push', async () => {
   expect((await postar('/teste', { codigo })).status).toBe(502);
   expect(enviarPush).toHaveBeenCalledTimes(1);
 });
+
+it('rejeita origens externas e exige Bearer válido na automação nativa', async () => {
+  const codigo = await inscrever();
+  const pagamento = { valor: 42.5, loja: 'Mercado' };
+  const outraOrigem = await pagar(codigo, pagamento, 'https://example.org');
+  expect(outraOrigem.status).toBe(403);
+  expect(outraOrigem.headers.has('Access-Control-Allow-Origin')).toBe(false);
+  expect((await pagar(codigo, pagamento, 'null')).status).toBe(403);
+  expect((await pagar('', pagamento)).status).toBe(401);
+  expect((await pagar(novoCodigo(), pagamento)).status).toBe(401);
+  expect((await pendentes(novoCodigo())).status).toBe(401);
+  expect((await pendentes(codigo, 'https://example.org')).status).toBe(403);
+  const preflight = await simulador.dispatchFetch(`${URL_DA_PONTE}/pendentes`, {
+    method: 'OPTIONS', headers: { Origin: ORIGEM, 'Access-Control-Request-Method': 'GET' },
+  });
+  expect(preflight.status).toBe(204);
+  expect(preflight.headers.get('Access-Control-Allow-Origin')).toBe(ORIGEM);
+  expect(preflight.headers.get('Access-Control-Allow-Headers')).toContain('Authorization');
+});
+
+it('valida os limites de Quantia e Loja e recusa valor negativo ou impreciso', async () => {
+  const codigo = await inscrever();
+  for (const valor of ['-1,00', 2.005, '9'.repeat(31), 'nove 7', 0]) {
+    expect((await pagar(codigo, { valor, loja: 'Mercado' })).status).toBe(400);
+  }
+  expect((await pagar(codigo, { valor: '1,00', loja: 'a'.repeat(61) })).status).toBe(400);
+  expect((await pagar(codigo, { valor: '1,00', loja: '  ' })).status).toBe(400);
+  expect(await (await pendentes(codigo)).json()).toEqual([]);
+});
+
+it('expira em 48 horas, guarda só o valor e a Loja e entrega a fila a uma única leitura', async () => {
+  enviarPush.mockClear().mockImplementation(async () => new RespostaDoSimulador(null, { status: 201 }));
+  const codigo = await inscrever();
+  const antes = Math.floor(Date.now() / 1000);
+  expect((await pagar(codigo, {
+    valor: 'R$ 1.234,50', loja: ' Mercado 3x ', dataDeAcesso: '2026-11-25', ip: '192.0.2.1', userAgent: 'Teste',
+  })).status).toBe(202);
+  expect((await pagar(codigo, { valor: 9.07, loja: '99 Food' })).status).toBe(202);
+  const kv = await simulador.getKVNamespace('PENDENTES');
+  const prefix = `${hashDoTeste(codigo)}:`;
+  const { keys } = await kv.list({ prefix });
+  expect(keys).toHaveLength(2);
+  for (const chave of keys) {
+    expect(chave.expiration).toBeGreaterThanOrEqual(antes + 172800);
+    expect(chave.expiration).toBeLessThanOrEqual(Math.ceil(Date.now() / 1000) + 172800);
+    expect(chave.metadata).toBeUndefined();
+    expect(Object.keys(await kv.get(chave.name, 'json') ?? {}).sort()).toEqual(['loja', 'valor']);
+  }
+
+  const leituras = await Promise.all([pendentes(codigo), pendentes(codigo)]);
+  expect(leituras.map(({ status }) => status)).toEqual([200, 200]);
+  const fila = (await Promise.all(leituras.map((resposta) => resposta.json() as Promise<unknown[]>))).flat();
+  expect(fila).toEqual([
+    { id: expect.any(String), valor: '1234,50', loja: 'Mercado 3x' },
+    { id: expect.any(String), valor: '9,07', loja: '99 Food' },
+  ]);
+  expect((await kv.list({ prefix })).keys).toEqual([]);
+  await expect.poll(() => enviarPush.mock.calls.length).toBe(2);
+});
+
+it('aceita o pagamento e preserva o Pendente quando o push falha', async () => {
+  const codigo = await inscrever();
+  enviarPush.mockClear().mockImplementation(async () => new RespostaDoSimulador(null, { status: 500 }));
+  expect((await pagar(codigo, { valor: '42,50', loja: 'Padaria' })).status).toBe(202);
+  await expect.poll(() => enviarPush.mock.calls.length).toBe(1);
+  expect(await (await pendentes(codigo)).json()).toEqual([{ id: expect.any(String), valor: '42,50', loja: 'Padaria' }]);
+});
+
+it('revoga o Código do aparelho e apaga inscrição e Pendentes sem afetar outro código', async () => {
+  const codigo = await inscrever();
+  const outro = await inscrever();
+  expect((await pagar(codigo, { valor: '5,00', loja: 'Padaria' })).status).toBe(202);
+  expect((await desligar(codigo)).status).toBe(204);
+  expect((await desligar(codigo)).status).toBe(204);
+  expect((await pagar(codigo, { valor: '5,00', loja: 'Padaria' })).status).toBe(401);
+  expect((await pendentes(codigo)).status).toBe(401);
+  expect((await postar('/inscrever', { codigo, subscription: INSCRICAO_DE_TESTE })).status).toBe(409);
+  expect(await (await simulador.getKVNamespace('INSCRICOES')).get(hashDoTeste(codigo))).toBeNull();
+  expect((await (await simulador.getKVNamespace('PENDENTES')).list({ prefix: `${hashDoTeste(codigo)}:` })).keys).toEqual([]);
+  expect((await pendentes(outro)).status).toBe(200);
+});
+
+it('limita a 60 chamadas por Código do aparelho por hora e ainda permite apagar os dados', async () => {
+  const codigo = await inscrever();
+  const outro = await inscrever();
+  const respostas = await Promise.all(Array.from({ length: 60 }, () => pendentes(codigo)));
+  expect(respostas.filter((resposta) => resposta.status === 200)).toHaveLength(59);
+  const limitada = respostas.filter((resposta) => resposta.status === 429);
+  expect(limitada).toHaveLength(1);
+  expect(Number(limitada[0].headers.get('Retry-After'))).toBeGreaterThan(0);
+  expect((await pendentes(outro)).status).toBe(200);
+  expect((await desligar(codigo)).status).toBe(204);
+}, 15_000);
+
+it('limita inscrições na borda mesmo com Códigos do aparelho diferentes', async () => {
+  const respostas = await Promise.all(Array.from({ length: 121 }, () => postar('/inscrever', { codigo: novoCodigo() })));
+  expect(respostas.some((resposta) => resposta.status === 400)).toBe(true);
+  expect(respostas.some((resposta) => resposta.status === 429 && resposta.headers.get('Retry-After') === '60')).toBe(true);
+}, 15_000);
