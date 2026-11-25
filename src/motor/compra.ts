@@ -50,7 +50,9 @@ export function avaliarCompra(entrada: EntradaDoMotor, compra: Compra): Resposta
   const teto = t ? { restanteAntes: t.restante, restanteDepois: t.restante - primeira, cabe: primeira <= t.restante } : null;
   const aindaAntes = antes.plano.aindaPodeGastar;
   const limite = { aindaAntes, aindaDepois: aindaAntes - primeira, cabe: primeira <= aindaAntes };
-  const previsao = antes.previsao ? { antes: antes.previsao.total, depois: antes.previsao.total + primeira } : null;
+  // Pix não passa pelo cartão: não mexe na Fatura.
+  const noCartao = compra.categoriaId !== 'pix-pessoas';
+  const previsao = antes.previsao ? { antes: antes.previsao.total, depois: antes.previsao.total + (noCartao ? primeira : 0) } : null;
 
   const metas = antes.metas.escada.map((m) => {
     const d = depois.metas.escada.find((x) => x.id === m.id);

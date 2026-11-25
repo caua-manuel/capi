@@ -54,10 +54,10 @@ export function Dividas({ analise: a, dividas }: Props) {
         <section className="cartao" style={{ margin: '12px 0 0' }}>
           <h2 className="titulo">{a.recomendado === 'avalanche' ? 'Maior juros primeiro' : 'Menor saldo primeiro'}</h2>
           <p className="texto-2" style={{ margin: '4px 0 0' }}>
-            {a.diferencaEmReais === 0 && a.diferencaEmMeses === 0
+            {a.diferencaEmReais === 0 && (a.diferencaEmMeses ?? 0) === 0
               ? <>Aqui os dois métodos dão o mesmo resultado.</>
               : a.recomendado === 'avalanche'
-              ? <>A avalanche paga <Valor centavos={Math.max(0, a.diferencaEmReais)} semCentavos /> a menos de juros{a.diferencaEmMeses > 0 ? ` e termina ${meses(a.diferencaEmMeses)} antes` : ''}.</>
+              ? <>A avalanche paga <Valor centavos={Math.max(0, a.diferencaEmReais)} semCentavos /> a menos de juros{(a.diferencaEmMeses ?? 0) > 0 ? ` e termina ${meses(a.diferencaEmMeses)} antes` : ''}.</>
               : <>Com 3 ou mais dívidas pequenas, quitar as menores primeiro dá vitórias rápidas. Custa <Valor centavos={Math.max(0, a.diferencaEmReais)} semCentavos /> a mais de juros.</>}
           </p>
           <p className="rotulo" style={{ margin: '8px 0 0' }}>

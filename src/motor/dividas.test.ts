@@ -50,7 +50,7 @@ describe('Avalanche x bola de neve', () => {
   it('mostra a diferença em reais e em meses', () => {
     const c = compararMetodos(dividas, 30000, 500000);
     expect(c.diferencaEmReais).toBe(c.bolaDeNeve.jurosTotais - c.avalanche.jurosTotais);
-    expect(c.diferencaEmMeses).toBe((c.bolaDeNeve.meses ?? 0) - (c.avalanche.meses ?? 0));
+    expect(c.diferencaEmMeses).toBe(c.bolaDeNeve.meses! - c.avalanche.meses!);
   });
 
   it('recomenda avalanche por padrão', () => {
