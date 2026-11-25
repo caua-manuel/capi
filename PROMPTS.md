@@ -57,23 +57,34 @@ Se uma issue depender de algo da Fase C, me avise e siga para a próxima. Ao ter
 
 ---
 
-## Fase C — modelo Sonnet (06, 13, 15, 18, 20, 21, 22)
+## Fase C — modelo Sonnet (23, 21, 15, 13, 18, 20, 22)
 
 ```
-Esta sessão é SONNET. Leia o CLAUDE.md (inclusive "Fases e modelos"), GLOSSARY.md, DESIGN.md e as telas de referência em design/telas/. Não explique os passos: faça e, ao terminar cada issue, me entregue o relatório (o que mudou, o que testar, detalhes).
+Esta sessão é SONNET. Vou ficar fora: trabalhe sozinho, sem parar para me perguntar. Leia o CLAUDE.md (inclusive "Fases e modelos"), GLOSSARY.md, DESIGN.md e as telas de referência em design/telas/. Não explique os passos: faça e me entregue os relatórios.
 
-Trabalhe só issues com o rótulo modelo:sonnet que estejam livres, nesta ordem: 21 → 06 → 15 → 13 → 18 → 20 → 22.
+Os PRs #24 a #40 ainda podem estar sem merge: comece a partir da branch mais recente (auditoria-fase-b) e empilhe cada issue nova sobre a anterior. A issue 06 (Fixos) já foi feita na Fase B. Se o arquivo capi-src-para-claude.zip estiver na raiz, coloque-o no .gitignore e nunca o commite.
+
+PRIMEIRO: crie e faça a issue nova "23: Telas fiéis ao design" (modelo:sonnet):
+1. Barra de baixo flutuante com vidro: abas Início, Metas, Fatura e Ajustes, aba ativa em pílula marinho com texto, e o botão + azul. Igual a design/telas/Home.html.
+2. Início igual a design/telas/Home.html: saudação com a Capi do dia ao lado (adiante a issue 22), cartão escuro com a arte do cartão 3D, aviso compacto, bloco azul-gelo da fatura com 3 colunas (sem data de fechamento, um botão pequeno "informar datas do cartão" dentro do bloco), linha de 4 atalhos redondos (Posso comprar?, Calendário, Check-in, Fechar mês) e Metas com ícone e barra.
+3. Ajustes igual a design/telas/Ajustes.html: cartão da Capi com o cofre, grupos no estilo iPhone e um ícone diferente para cada item.
+4. Novo gasto: os chips de categoria quebram a linha, sem cortar na lateral.
+Compare cada tela com o arquivo de design/telas/ na mesma largura (390 px).
+
+DEPOIS, nesta ordem: 21 → 15 → 13 → 18 → 20 → 22. Inclua também as perguntas que a Fase B deixou para depois: "quanto você já guarda por mês" (usar na data "no seu ritmo"), "alguém depende de você?", as 3 perguntas de perfil de investidor (só quando o objetivo for investir), "quanto paga além das parcelas" e "não sei / estimar" onde ainda falta.
 
 Para cada issue:
 a. Atribua a mim, rótulo em-andamento, branch NN-slug.
-b. Use o Motor que já existe (não reescreva contas). Siga o DESIGN.md e as telas de design/telas/. A Capi aparece no máximo uma vez por tela, com as imagens de design/capi/.
+b. Use o Motor que já existe (não reescreva contas). Siga o DESIGN.md e as telas de design/telas/. No máximo uma Capi por tela, com as imagens de design/capi/.
 c. Depois de cada tela, rode a skill break-ui com valores extremos (R$ 1.000.000, zero gastos, nome de loja enorme) e corrija o que quebrar.
-d. npm run test, npm run build, PR com "Fecha #n" e o relatório (o que mudou, o que testar, detalhes). Siga para a próxima (se depender de uma branch ainda sem merge, parta dela); merge só quando eu pedir.
+d. npm run test, npm run build, PR com "Fecha #n" e o relatório na descrição. Não faça merge.
 
-Ao terminar, faça uma revisão final com /impeccable polish nas telas e me mostre o que falta para o MVP estar completo.
+Decisão já tomada: o valor de "guardar por mês" que vale em todo o app é o das Metas (a Sobra distribuída pela escada). A fatia "Guardar" da regra 50-30-20 aparece só no Diagnóstico, como referência.
+
+Se aparecer uma decisão que você me perguntaria, escolha a opção mais simples que respeita os ADRs e a spec, anote em "Decisões que tomei sozinho" e siga. Nunca faça merge, nunca apague repositório.
+
+No final, rode /impeccable polish nas telas e me entregue UM relatório geral: PRs na ordem de merge, o que mudou, uma lista única do que testar (passo a passo, com o resultado esperado), decisões que tomou sozinho, o que ainda ficou diferente do design e o que falta para o MVP. Termine com: "Fase C concluída."
 ```
-
----
 
 ## Retomar qualquer fase depois de uma pausa
 
