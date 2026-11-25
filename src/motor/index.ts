@@ -13,6 +13,7 @@ import type { Meta } from '../dominio/meta';
 import { analisarDividas, type AnaliseDasDividas } from './dividas';
 import { detectarRecorrentes, type Recorrente } from './recorrentes';
 import type { Fatura } from '../dominio/fatura';
+import { preverFatura, type Cartao, type PrevisaoDeFatura } from './previsao';
 
 /** Tudo o que o Motor precisa. As Telas leem do Repositório e passam aqui. */
 export interface EntradaDoMotor {
@@ -29,6 +30,8 @@ export interface EntradaDoMotor {
   metas?: readonly Meta[];
   /** Faturas já importadas (só as linhas, nunca o texto colado). */
   faturas?: readonly Fatura[];
+  /** Dia de fechamento e de vencimento do cartão; sem ele não há Previsão de fatura. */
+  cartao?: Cartao;
 }
 
 export interface MesDoPlano {
@@ -49,6 +52,7 @@ export interface SaidaDoMotor {
   /** Nulo quando não há Dívidas. */
   dividas: AnaliseDasDividas | null;
   recorrentes: Recorrente[];
+  previsao: PrevisaoDeFatura | null;
 }
 
 /** A função de entrada do Motor: puro, sem tela e sem ler nem gravar dados. */
@@ -68,5 +72,9 @@ export function calcular(e: EntradaDoMotor): SaidaDoMotor {
   });
   const dividas = analisarDividas(e.onboarding.dividas, diagnostico.sobra, diagnostico.renda);
   const recorrentes = detectarRecorrentes(e.faturas ?? [], e.parametros.iofInternacional);
-  return { diagnostico, mesDoPlano, plano, metas, dividas, recorrentes };
+  const previsao = e.cartao ? preverFatura({
+    hoje: e.hoje, cartao: e.cartao, lancamentos: e.lancamentos, faturas: e.faturas ?? [], fixos: e.fixos, recorrentes,
+    iofInternacional: e.parametros.iofInternacional,
+  }) : null;
+  return { diagnostico, mesDoPlano, plano, metas, dividas, recorrentes, previsao };
 }
