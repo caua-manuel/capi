@@ -16,4 +16,6 @@ export interface Lancamento {
   idDaLinha?: string;
   /** Parcela "x/y", quando veio de uma compra parcelada. */
   parcela?: { atual: number; total: number };
+  /** Compra parcelada digitada à mão: todas as Parcelas apontam para o id da primeira. */
+  compraId?: string;
 }

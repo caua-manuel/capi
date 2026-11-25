@@ -77,7 +77,7 @@ export function preverFatura(e: EntradaDaPrevisao): PrevisaoDeFatura {
 
   // 1. Lançamentos do ciclo pagos no cartão (data da compra).
   const lancados = e.lancamentos.filter((l) => noCartao(l) && noCiclo(l.data));
-  for (const l of lancados) itens.push({ origem: 'lancamento', loja: l.loja, valor: l.valor, categoriaId: l.categoriaId, data: l.data });
+  for (const l of lancados) itens.push({ origem: 'lancamento', loja: l.loja, valor: l.valor, categoriaId: l.categoriaId, data: l.data, ...(l.parcela ? { parcela: l.parcela } : {}) });
 
   // 2. A próxima Parcela das compras parceladas da última Fatura antes deste ciclo.
   const anteriores = e.faturas.filter((f) => f.fechamento < ciclo.ate).sort((a, b) => b.fechamento.localeCompare(a.fechamento));
@@ -88,6 +88,9 @@ export function preverFatura(e: EntradaDaPrevisao): PrevisaoDeFatura {
       if (linha.tipo !== 'compra' || !linha.parcela) continue;
       const atual = linha.parcela.atual + passos;
       if (passos < 1 || atual > linha.parcela.total) continue;
+      // Parcela já lançada à mão neste ciclo: não conta de novo.
+      const total = linha.parcela.total;
+      if (lancados.some((l) => l.parcela?.atual === atual && l.parcela.total === total && nomesParecidos(l.loja, linha.loja))) continue;
       itens.push({
         origem: 'parcela', loja: linha.loja, valor: linha.valor, categoriaId: linha.categoriaId ?? 'outros', data: ciclo.ate,
         parcela: { atual, total: linha.parcela.total },

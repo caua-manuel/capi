@@ -88,3 +88,25 @@ describe('Previsão de fatura', () => {
     expect(previsao!.porCategoria[1]!.lojas).toEqual([{ loja: 'iFood', total: 8000 }, { loja: 'Rappi', total: 2500 }]);
   });
 });
+
+describe('Compra parcelada lançada à mão', () => {
+  const parcela = (data: string, atual: number, total = 3) => gasto(10000, 'compras', data, 'Notebook', { parcela: { atual, total } });
+
+  it('a Parcela do ciclo entra na Previsão com o "x/y", e as dos meses seguintes ficam para as próximas Faturas', () => {
+    const { previsao } = rodar(ana, { cartao, lancamentos: [parcela('2026-12-08', 1), parcela('2027-01-08', 2), parcela('2027-02-08', 3)] });
+    const itens = previsao!.itens.filter((i) => i.loja === 'Notebook');
+    expect(itens).toHaveLength(1);
+    expect(itens[0]).toMatchObject({ valor: 10000, parcela: { atual: 1, total: 3 } });
+  });
+
+  it('a Previsão do ciclo seguinte já conta a Parcela 2', () => {
+    const { previsao } = rodar(ana, { cartao, hoje: '2027-01-10', lancamentos: [parcela('2026-12-08', 1), parcela('2027-01-08', 2), parcela('2027-02-08', 3)] });
+    expect(previsao!.itens.filter((i) => i.loja === 'Notebook').map((i) => i.parcela?.atual)).toEqual([2]);
+  });
+
+  it('não conta duas vezes a Parcela que também veio de uma Fatura importada', () => {
+    const importada = fatura('2026-12-05', [linha('2026-11-20', 'NOTEBOOK', 10000, { parcela: { atual: 2, total: 10 } })]);
+    const { previsao } = rodar(ana, { cartao, faturas: [importada], lancamentos: [parcela('2026-12-20', 3, 10)] });
+    expect(previsao!.itens.filter((i) => /notebook/i.test(i.loja))).toHaveLength(1);
+  });
+});

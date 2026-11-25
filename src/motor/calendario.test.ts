@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Fatura } from '../dominio/fatura';
 import type { Fixo } from '../dominio/fixo';
+import type { Lancamento } from '../dominio/lancamento';
 import { montarCalendario, type EntradaDoCalendario } from './calendario';
 
 const fixo = (id: string, nome: string, valor: number, dia: number): Fixo => ({
@@ -65,5 +66,26 @@ describe('Calendário dos próximos 3 meses', () => {
     const c = montarCalendario(base);
     expect(c.maisApertado).toBeNull();
     expect(c.meses.every((m) => m.total === 0 && !m.apertado)).toBe(true);
+  });
+});
+
+describe('Compra parcelada lançada à mão no Calendário', () => {
+  const parcela = (data: string, atual: number, extra: Partial<Lancamento> = {}): Lancamento => ({
+    id: `cp${atual}${data}`, valor: 10000, loja: 'Notebook', categoriaId: 'compras', data, origem: 'manual', criadoEm: `${data}T12:00:00Z`,
+    parcela: { atual, total: 4 }, ...extra,
+  });
+
+  it('as Parcelas futuras aparecem no dia delas, com o "x/y"', () => {
+    const c = montarCalendario({ ...base, lancamentos: [parcela('2026-12-25', 1), parcela('2027-01-25', 2), parcela('2027-02-25', 3), parcela('2027-03-25', 4)] });
+    const ps = c.meses.flatMap((m) => m.compromissos).filter((x) => x.tipo === 'parcela');
+    expect(ps.map((x) => [x.data, x.parcela])).toEqual([
+      ['2026-12-25', { atual: 1, total: 4 }], ['2027-01-25', { atual: 2, total: 4 }], ['2027-02-25', { atual: 3, total: 4 }],
+    ]);
+    expect(c.meses.map((m) => m.total)).toEqual([10000, 10000, 10000]);
+  });
+
+  it('o que já passou e o que veio de Importação não repete', () => {
+    const c = montarCalendario({ ...base, lancamentos: [parcela('2026-12-01', 1), parcela('2027-01-25', 2, { origem: 'importacao' })] });
+    expect(c.meses.flatMap((m) => m.compromissos)).toEqual([]);
   });
 });
