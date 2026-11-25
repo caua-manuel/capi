@@ -3,7 +3,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { build } from 'esbuild';
 import { convertV4MiniflareOptions, Miniflare, Response as RespostaDoSimulador } from 'miniflare';
 import { afterAll, beforeAll, expect, it, vi } from 'vitest';
-import { CHAVES_DE_TESTE, INSCRICAO_DE_TESTE, ORIGEM } from './rfc8291';
+import { CHAVES_DE_TESTE, decifrarPeloNavegadorDeTeste, INSCRICAO_DE_TESTE, ORIGEM } from './rfc8291';
 
 const URL_DA_PONTE = 'https://capi-ponte.example';
 const novoCodigo = () => randomBytes(32).toString('base64url');
@@ -16,6 +16,7 @@ beforeAll(async () => {
   });
   simulador = new Miniflare(convertV4MiniflareOptions({
     name: 'ponte', modules: true, script: outputFiles[0].text, compatibilityDate: '2026-11-25',
+    unsafeInspectDurableObjects: true,
     kvNamespaces: ['INSCRICOES', 'PENDENTES'], bindings: { VAPID: JSON.stringify(CHAVES_DE_TESTE) },
     durableObjects: { COORDENACAO: { className: 'CoordenacaoDoAtalho', useSQLite: true } },
     ratelimits: { LIMITE_POR_ROTA: { namespace_id: '682025', simple: { limit: 120, period: 60 } } },
@@ -159,7 +160,11 @@ it('valida os limites de Quantia e Loja e recusa valor negativo ou impreciso', a
 });
 
 it('expira em 48 horas, guarda só o valor e a Loja e entrega a fila a uma única leitura', async () => {
-  enviarPush.mockClear().mockImplementation(async () => new RespostaDoSimulador(null, { status: 201 }));
+  const enviados: string[] = [];
+  enviarPush.mockClear().mockImplementation(async (pedido) => {
+    enviados.push(decifrarPeloNavegadorDeTeste(Buffer.from(await pedido.arrayBuffer())));
+    return new RespostaDoSimulador(null, { status: 201 });
+  });
   const codigo = await inscrever();
   const antes = Math.floor(Date.now() / 1000);
   expect((await pagar(codigo, {
@@ -185,7 +190,11 @@ it('expira em 48 horas, guarda só o valor e a Loja e entrega a fila a uma únic
     { id: expect.any(String), valor: '9,07', loja: '99 Food' },
   ]);
   expect((await kv.list({ prefix })).keys).toEqual([]);
-  await expect.poll(() => enviarPush.mock.calls.length).toBe(2);
+  await expect.poll(() => enviados.length).toBe(2);
+  expect(enviados.map((texto) => JSON.parse(texto))).toEqual(expect.arrayContaining([
+    { id: (fila[0] as { id: string }).id, texto: 'R$ 1.234,50 · Mercado 3x — toque para categorizar' },
+    { id: (fila[1] as { id: string }).id, texto: 'R$ 9,07 · 99 Food — toque para categorizar' },
+  ]));
 });
 
 it('aceita o pagamento e preserva o Pendente quando o push falha', async () => {
@@ -201,6 +210,7 @@ it('revoga o Código do aparelho e apaga inscrição e Pendentes sem afetar outr
   const outro = await inscrever();
   expect((await pagar(codigo, { valor: '5,00', loja: 'Padaria' })).status).toBe(202);
   expect((await desligar(codigo)).status).toBe(204);
+  await simulador.unsafeEvictDurableObject('ponte', 'CoordenacaoDoAtalho', { name: hashDoTeste(codigo) });
   expect((await desligar(codigo)).status).toBe(204);
   expect((await pagar(codigo, { valor: '5,00', loja: 'Padaria' })).status).toBe(401);
   expect((await pendentes(codigo)).status).toBe(401);

@@ -15,6 +15,9 @@ invocation_logs = false
 [observability.traces]
 enabled = false
 
+[observability.issues]
+enabled = false
+
 [[kv_namespaces]]
 binding = "INSCRICOES"
 

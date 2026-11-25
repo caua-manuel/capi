@@ -19,7 +19,7 @@ interface Estado {
   fila: Referencia[];
   aExcluir: Referencia[];
   limite?: { janela: number; total: number };
-  revogacao?: { hash: string; expira: number; excluirInscricao: boolean };
+  revogacao?: true | { hash: string; excluirInscricao?: boolean };
 }
 
 export type Acao = { tipo: 'inscrever'; inscricao: Inscricao } | { tipo: 'pagamento'; pagamento: Pagamento }
@@ -78,23 +78,27 @@ export class CoordenacaoDoAtalho extends DurableObject<Ambiente> {
   }
 
   private async lerEstado(agora: number): Promise<Estado> {
-    const estado = await this.ctx.storage.get<Estado>('estado') ?? { fila: [], aExcluir: [] };
+    const salvo = await this.ctx.storage.get<Estado | true>('estado');
+    if (salvo === true) return { fila: [], aExcluir: [], revogacao: true };
+    const estado = salvo ?? { fila: [], aExcluir: [] };
     estado.fila = estado.fila.filter(({ expira }) => expira > agora);
     estado.aExcluir = estado.aExcluir.filter(({ expira }) => expira > agora);
     if (estado.limite?.janela !== Math.floor(agora / UMA_HORA)) delete estado.limite;
-    if (estado.revogacao && !estado.revogacao.excluirInscricao && estado.revogacao.expira <= agora) delete estado.revogacao;
+    // Atualiza a marca gravada na primeira versão do Worker de pagamentos.
+    if (typeof estado.revogacao === 'object' && estado.revogacao.excluirInscricao === false) estado.revogacao = true;
     return estado;
   }
 
   private async gravar(estado: Estado, agora: number): Promise<void> {
     const prazos = estado.fila.map(({ expira }) => expira);
     if (estado.limite) prazos.push((estado.limite.janela + 1) * UMA_HORA);
-    if (estado.aExcluir.length > 0 || estado.revogacao?.excluirInscricao) prazos.push(agora + 60_000);
-    if (estado.revogacao && estado.revogacao.expira > agora) prazos.push(estado.revogacao.expira);
+    if (estado.aExcluir.length > 0 || typeof estado.revogacao === 'object') prazos.push(agora + 60_000);
 
     await this.ctx.storage.transaction(async (transacao) => {
       if (prazos.length === 0) {
-        await transacao.delete('estado');
+        // Depois da limpeza, só este bit fica associado ao identificador derivado do hash.
+        if (estado.revogacao === true) await transacao.put('estado', true);
+        else await transacao.delete('estado');
         await transacao.deleteAlarm();
       } else {
         await transacao.put('estado', estado);
@@ -149,11 +153,12 @@ export class CoordenacaoDoAtalho extends DurableObject<Ambiente> {
   }
 
   private async desligar(hash: string, estado: Estado, agora: number): Promise<Resultado> {
+    if (estado.revogacao === true && estado.aExcluir.length === 0) return { status: 204 };
     if (!estado.revogacao) {
       if (!estado.limite && estado.fila.length === 0 && estado.aExcluir.length === 0 && !await this.env.INSCRICOES.get(hash)) {
         return { status: 204 };
       }
-      estado.revogacao = { hash, expira: agora + TTL_EM_SEGUNDOS * 1000, excluirInscricao: true };
+      estado.revogacao = { hash };
       estado.aExcluir.push(...estado.fila);
       estado.fila = [];
       delete estado.limite;
@@ -161,14 +166,14 @@ export class CoordenacaoDoAtalho extends DurableObject<Ambiente> {
     }
     await this.excluirDoKv(estado);
     await this.gravar(estado, agora);
-    return { status: estado.revogacao.excluirInscricao || estado.aExcluir.length > 0 ? 503 : 204 };
+    return { status: estado.revogacao !== true || estado.aExcluir.length > 0 ? 503 : 204 };
   }
 
   private async excluirDoKv(estado: Estado): Promise<void> {
-    if (estado.revogacao?.excluirInscricao) {
+    if (typeof estado.revogacao === 'object') {
       try {
         await this.env.INSCRICOES.delete(estado.revogacao.hash);
-        estado.revogacao.excluirInscricao = false;
+        estado.revogacao = true;
       } catch { /* O alarme retenta a exclusão. */ }
     }
     const restantes: Referencia[] = [];
