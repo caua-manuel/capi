@@ -1,7 +1,8 @@
 import type { Categoria } from '../dominio/categorias';
 import type { Lancamento } from '../dominio/lancamento';
 import { Icone } from '../componentes/Icone';
-import { formatarReais, nomeDoMes, rotuloDaData, saudacao } from './formato';
+import { Valor, useModoDiscreto } from './discreto';
+import { nomeDoMes, rotuloDaData, saudacao } from './formato';
 
 interface Props {
   mes: string;
@@ -11,9 +12,11 @@ interface Props {
   onLancar: () => void;
   onEditar: (lancamento: Lancamento) => void;
   onAjustes: () => void;
+  onAlternarDiscreto: () => void;
 }
 
-export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAjustes }: Props) {
+export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAjustes, onAlternarDiscreto }: Props) {
+  const discreto = useModoDiscreto();
   const total = lancamentos.reduce((soma, l) => soma + l.valor, 0);
   const nomeDaCategoria = (id: string) => categorias.find((c) => c.id === id)?.nome ?? 'Outros';
   const base = import.meta.env.BASE_URL;
@@ -25,6 +28,10 @@ export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAju
           <img src={`${base}apple-touch-icon.png`} alt="Capi" width={44} height={44}
             style={{ borderRadius: 11, boxShadow: '0 2px 8px rgba(11,21,48,.18)' }} />
           <div style={{ display: 'flex', gap: 10 }}>
+            <button type="button" className="botao-redondo" aria-pressed={discreto} onClick={onAlternarDiscreto}
+              aria-label={discreto ? 'Mostrar valores' : 'Esconder valores (modo discreto)'}>
+              <Icone nome={discreto ? 'olhoFechado' : 'olho'} />
+            </button>
             <button type="button" className="botao-redondo" aria-label="Ajustes" onClick={onAjustes}>
               <Icone nome="ajustes" />
             </button>
@@ -39,7 +46,7 @@ export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAju
         <section className="cartao-destaque" style={{ marginTop: 16 }}>
           <div className="sub">Gastos de {nomeDoMes(mes)}</div>
           <div className="num" style={{ fontSize: 44, fontWeight: 600, lineHeight: 1.05, letterSpacing: '-0.035em', marginTop: 4 }}>
-            {formatarReais(total)}
+            <Valor centavos={total} />
           </div>
           <div className="sub" style={{ marginTop: 2 }}>
             {lancamentos.length === 1 ? '1 lançamento' : `${lancamentos.length} lançamentos`}
@@ -63,7 +70,7 @@ export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAju
                       <span className="item-loja">{l.loja}</span>
                       <span className="rotulo">{nomeDaCategoria(l.categoriaId)} · {rotuloDaData(l.data)}</span>
                     </span>
-                    <span className="num item-valor">{formatarReais(l.valor)}</span>
+                    <span className="num item-valor"><Valor centavos={l.valor} /></span>
                   </button>
                 </li>
               ))}
