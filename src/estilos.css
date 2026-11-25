@@ -435,3 +435,12 @@ a { color: var(--bl); text-decoration: none; }
 .instalar-acoes .link { align-self: center; min-height: 44px; }
 
 .selo-parcelas { display: inline-block; margin-top: 8px; padding: 6px 12px; border-radius: 14px; background: var(--blsf); color: var(--bl); font-size: 13px; font-weight: 600; }
+
+/* Aviso "Gasto apagado · Desfazer" */
+.aviso-desfazer {
+  position: fixed; z-index: 20; left: 50%; transform: translateX(-50%); width: min(398px, calc(100% - 32px));
+  bottom: calc(env(safe-area-inset-bottom) + 108px); padding: 6px 8px 6px 20px; border-radius: 26px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: var(--hero2); color: #FFFFFF; font-weight: 500; box-shadow: var(--sh-destaque);
+}
+.aviso-desfazer .link { color: var(--herodestaque); font-weight: 600; min-height: 44px; padding: 0 14px; }
