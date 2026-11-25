@@ -7,7 +7,7 @@ import { fixosDoMes } from './fixos';
 import type { Cartao } from './previsao';
 import type { Recorrente } from './recorrentes';
 
-export type TipoDeCompromisso = 'fixo' | 'parcela' | 'recorrente' | 'anual';
+export type TipoDeCompromisso = 'fixo' | 'parcela' | 'recorrente' | 'anual' | 'salario';
 
 export interface Compromisso {
   /** AAAA-MM-DD */
@@ -43,6 +43,8 @@ export interface EntradaDoCalendario {
   faturas: readonly Fatura[];
   cartao?: Cartao;
   anuais: readonly AnualDeclarado[];
+  /** Dia em que a renda cai e quanto cai; aparece como entrada, sem entrar nos totais. */
+  salario?: { dia: number; valor: Centavos };
   /** Quando o Onboarding foi respondido: a Caixinha conta 1/12 do Anual por mês desde então. */
   respondidoEm: string;
 }
@@ -88,8 +90,10 @@ export function montarCalendario(e: EntradaDoCalendario): Calendario {
       compromissos.push({ data: dataNoMes(mes, 1), tipo: 'anual', nome: a.nome, valor: a.valor, caixinha: { guardado, falta: a.valor - guardado } });
     }
 
+    if (e.salario) compromissos.push({ data: dataNoMes(mes, e.salario.dia), tipo: 'salario', nome: 'Salário', valor: e.salario.valor });
+
     const visiveis = compromissos.filter((c) => c.data >= e.hoje).sort((a, b) => a.data.localeCompare(b.data) || a.nome.localeCompare(b.nome));
-    meses.push({ mes, total: visiveis.reduce((s, c) => s + c.valor, 0), compromissos: visiveis, apertado: false });
+    meses.push({ mes, total: visiveis.filter((c) => c.tipo !== 'salario').reduce((s, c) => s + c.valor, 0), compromissos: visiveis, apertado: false });
   }
 
   const maior = Math.max(...meses.map((m) => m.total));

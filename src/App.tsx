@@ -165,6 +165,7 @@ export function App() {
     if (!onboarding || !saida) return null;
     return montarCalendario({
       hoje: hoje(), fixos, recorrentes: saida.recorrentes, faturas, cartao, anuais: onboarding.anuais, respondidoEm: onboarding.respondidoEm,
+      salario: onboarding.diaDoSalario ? { dia: onboarding.diaDoSalario, valor: onboarding.renda.valor } : undefined,
     });
   }, [onboarding, saida, fixos, faturas, cartao]);
 
@@ -326,10 +327,10 @@ export function App() {
           aporteFeito={placar ? fechamentosComAporte.includes(placar.mes) : false} onVirarAporte={virarAporte} />
       )}
       {rota === 'dia-do-pagamento' && saida && (
-        <DiaDoPagamento mes={mes} guardarPorMes={saida.plano.guardarPorMes} aportes={saida.metas.escada}
+        <DiaDoPagamento mes={mes} hoje={hoje()} diaDoSalario={onboarding?.diaDoSalario} guardarPorMes={saida.plano.guardarPorMes} aportes={saida.metas.escada}
           jaSeparou={pagamentosSeparados.includes(mes)} onSeparei={separeiOPagamento} />
       )}
-      {rota === 'lembretes' && <Lembretes />}
+      {rota === 'lembretes' && <Lembretes diaDoSalario={onboarding?.diaDoSalario} />}
       {rota === 'backup' && (
         <Backup hoje={hoje()} ultimoBackup={ultimoBackup} onExportou={() => { void registrarBackupFeito(hoje()); setUltimoBackup(hoje()); }} />
       )}

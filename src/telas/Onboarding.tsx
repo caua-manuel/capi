@@ -53,6 +53,8 @@ const novaDivida = (): Divida => ({ id: novoId(), nome: '', tipo: 'emprestimo', 
 
 interface Rascunho {
   renda: Centavos | null;
+  /** Dia do mês em que a renda cai; nulo = não informou. */
+  diaDoSalario: number | null;
   tipo: TipoDeRenda;
   ultimosMeses: (Centavos | null)[];
   trabalho: Trabalho | null;
@@ -80,13 +82,13 @@ interface Rascunho {
 function rascunhoDe(r?: RespostasDoOnboarding): Rascunho {
   if (!r) {
     return {
-      renda: null, tipo: 'fixa', ultimosMeses: Array<Centavos | null>(6).fill(null), trabalho: null, comQuem: null, moradia: null, fixos: [],
+      renda: null, diaDoSalario: null, tipo: 'fixa', ultimosMeses: Array<Centavos | null>(6).fill(null), trabalho: null, comQuem: null, moradia: null, fixos: [],
       variaveisEssencial: null, variaveisEstilo: null, temDividas: null, dividas: [], guardado: null, onde: 'conta', guardaPorMes: null, pagaAlem: null,
       objetivos: [], temDependentes: null, tolerancia: null, prazo: null, experiencia: null, estimado: [],
     };
   }
   return {
-    renda: r.renda.valor, tipo: r.renda.tipo,
+    renda: r.renda.valor, diaDoSalario: r.diaDoSalario ?? null, tipo: r.renda.tipo,
     ultimosMeses: [...r.renda.ultimosMeses, ...Array<Centavos | null>(6).fill(null)].slice(0, 6),
     trabalho: r.trabalho, comQuem: r.moradia.comQuem, moradia: r.moradia.valor, fixos: r.fixos,
     variaveisEssencial: r.variaveis.essencial, variaveisEstilo: r.variaveis.estiloDeVida,
@@ -148,6 +150,7 @@ export function Onboarding({ inicial, categorias, salarioMinimo, onConcluir, onS
   function concluir() {
     onConcluir({
       renda: { valor: renda, tipo: r.tipo, ultimosMeses: r.tipo === 'fixa' ? [] : r.ultimosMeses.filter((v): v is Centavos => v !== null && v > 0) },
+      diaDoSalario: r.diaDoSalario ?? undefined,
       trabalho: r.trabalho ?? 'outro',
       moradia: { comQuem: r.comQuem ?? 'sozinho', valor: r.moradia ?? 0 },
       fixos: r.fixos.map((f) => ({ ...f, nome: f.nome.trim() })),
@@ -216,7 +219,22 @@ export function Onboarding({ inicial, categorias, salarioMinimo, onConcluir, onS
               ))}
             </div>
             <button type="button" className="link-estimar" onClick={() => estimar('renda', { renda: 2 * salarioMinimo })}>Não sei, quero estimar</button>
-            <p className="ajuda">É a base dos seus tetos, metas e de quanto dá para guardar.</p>
+            <div className="cartao" style={{ margin: 0 }}>
+              <label htmlFor="dia-do-salario" className="rotulo">Em que dia do mês cai? (opcional)</label>
+              <input id="dia-do-salario" className="seletor num" type="number" inputMode="numeric" min={1} max={31} placeholder="Dia, de 1 a 31"
+                value={r.diaDoSalario ?? ''} style={{ marginTop: 4 }}
+                onChange={(e) => {
+                  const n = Math.trunc(Number(e.target.value));
+                  mudar({ diaDoSalario: e.target.value === '' || !Number.isFinite(n) ? null : Math.min(31, Math.max(1, n)) });
+                }} />
+              <div className="chips-livres" style={{ marginTop: 10 }}>
+                {[1, 5, 10, 15, 20, 30].map((d) => (
+                  <button key={d} type="button" className="chip num" aria-pressed={r.diaDoSalario === d} onClick={() => mudar({ diaDoSalario: d })}>Dia {d}</button>
+                ))}
+                <button type="button" className="chip" aria-pressed={r.diaDoSalario === 31} onClick={() => mudar({ diaDoSalario: 31 })}>Último dia</button>
+              </div>
+            </div>
+            <p className="ajuda">É a base dos seus tetos, metas e de quanto dá para guardar. O dia aparece no Calendário e marca o Dia do pagamento.</p>
           </Pergunta>
         )}
 
