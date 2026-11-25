@@ -18,6 +18,8 @@ import { Fixos } from './telas/Fixos';
 import type { Meta } from './dominio/meta';
 import { apagarMeta, listarMetas, salvarMeta } from './repositorio/metas';
 import { Metas } from './telas/Metas';
+import { Dividas } from './telas/Dividas';
+import { Cabecalho, Folha } from './componentes/Cabecalho';
 import { mesCurto } from './telas/formato';
 import { PARAMETROS_PADRAO } from './motor/parametros';
 import { gravarOnboarding, lerOnboarding } from './repositorio/onboarding';
@@ -169,9 +171,16 @@ export function App() {
     <ProvedorDiscreto ligado={discreto !== false}>
       {rota === 'ajustes' && <Ajustes />}
       {rota === 'metas' && saida && (
-        <Metas plano={saida.metas} metas={metas} renda={saida.diagnostico.renda}
+        <Metas plano={saida.metas} metas={metas} renda={saida.diagnostico.renda} temDividas={saida.dividas !== null}
           onSalvar={(m) => { setMetas((atuais) => [...atuais.filter((x) => x.id !== m.id), m]); void salvarMeta(m); }}
           onApagar={(id) => { setMetas((atuais) => atuais.filter((x) => x.id !== id)); void apagarMeta(id); }} />
+      )}
+      {rota === 'dividas' && saida?.dividas && onboarding && <Dividas analise={saida.dividas} dividas={onboarding.dividas} />}
+      {rota === 'dividas' && saida && !saida.dividas && (
+        <main className="tela tela-detalhe">
+          <Cabecalho linha1="Suas dívidas" linha2="nenhuma por aqui" onVoltar={() => navegar('ajustes')} />
+          <Folha><p className="texto-2">Você não informou dívidas. Se tiver alguma, inclua em Ajustes → Suas respostas.</p></Folha>
+        </main>
       )}
       {rota === 'fixos' && (
         <Fixos fixos={fixos} mes={mes} categorias={visiveis}
