@@ -43,7 +43,7 @@ O app se chama **Capi**, e a mascote é a Capi, uma capivara. PWA individual, mi
 
 ### Commits
 - Mensagem em português, no imperativo, citando a issue: `Adiciona Conciliação por valor e data (#12)`.
-- Uma branch por issue (`12-conciliacao`) e um PR com `Fecha #12`, para o histórico ficar ligado à issue.
+- Uma branch por issue (`12-conciliacao`) e um PR com `Closes #n` (em inglês, para o GitHub fechar a issue sozinho ao mergear). Exemplo: `Closes #12`.
 - Um commit por passo verde do `/tdd` é bem-vindo.
 
 ## Como trabalhar uma issue
@@ -52,7 +52,7 @@ O app se chama **Capi**, e a mascote é a Capi, uma capivara. PWA individual, mi
 2. Atribua a issue a você e coloque o rótulo `em-andamento`; crie a branch dela.
 3. Implemente uma fatia vertical completa, sem pausas para aprovação, (Motor, Repositório e Tela, quando couber) e marque os critérios de aceite.
 4. Rode `npm run test` e `npm run build`, e confira a tela no celular ou no simulador.
-5. Abra o PR com `Fecha #<n>`, cole o relatório (o que mudou, o que testar, detalhes) na descrição e me mostre o mesmo relatório. O merge só acontece quando eu pedir.
+5. Abra o PR com `Closes #n`, cole o relatório (o que mudou, o que testar, detalhes) na descrição e me mostre o mesmo relatório. O merge só acontece quando eu pedir.
 
 ## Fases e modelos
 

@@ -12,6 +12,6 @@ Onde o CLAUDE.md citar "Claude", leia "você". Siga o CLAUDE.md como se fosse es
 Regras rápidas:
 - Rodar testes e build sempre a partir de C:\Capri (C maiúsculo).
 - Uma issue por sessão. Toque o mínimo de arquivos; não leia o repositório inteiro.
-- Branch própria, testes passando, PR com "Fecha #n". Não faça merge.
+- Branch própria, testes passando, PR com `Closes #n` (em inglês, para o GitHub fechar a issue sozinho ao mergear). Não faça merge.
 - Sem explicar passos. Relatório final curto: o que mudou / o que testar / detalhes.
 - Pergunte só em escolha de produto ou se contradisser um ADR.
