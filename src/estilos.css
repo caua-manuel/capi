@@ -379,6 +379,10 @@ a { color: var(--bl); text-decoration: none; }
 .lista-compra li > span:first-child { color: var(--tx2); }
 .segmentado button { min-width: 0; }
 
+/* Boas-vindas */
+.boas-vindas { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 28px; }
+.boas-vindas-rodape { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom) + 24px); width: min(398px, calc(100% - 32px)); }
+
 /* Fechamento */
 .bloco-placar { margin: 0; padding: 20px 22px; flex-direction: column; gap: 2px; }
 .placar-numero { font-family: var(--fonte-titulo); font-size: 44px; font-weight: 600; letter-spacing: -0.035em; line-height: 1.05; }

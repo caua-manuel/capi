@@ -41,6 +41,7 @@ import { CheckIn } from './telas/CheckIn';
 import { DiaDoPagamento } from './telas/DiaDoPagamento';
 import { Lembretes } from './telas/Lembretes';
 import { Backup } from './telas/Backup';
+import { capiDoDia, type CapiDoDia } from './motor/capiDoDia';
 import { registrarBackupFeito } from './repositorio/backup';
 import { gravarOnboarding, lerOnboarding } from './repositorio/onboarding';
 import { Diagnostico } from './telas/Diagnostico';
@@ -161,6 +162,25 @@ export function App() {
       hoje: hoje(), fixos, recorrentes: saida.recorrentes, faturas, cartao, anuais: onboarding.anuais, respondidoEm: onboarding.respondidoEm,
     });
   }, [onboarding, saida, fixos, faturas, cartao]);
+
+  // Capi do dia: o Motor escolhe e a escolha fica fixa até o dia seguinte (no máximo uma mudança por dia).
+  const [capiSalva, setCapiSalva] = useState<{ data: string; capi: CapiDoDia } | null | undefined>(undefined);
+  useEffect(() => { void lerAjuste<{ data: string; capi: CapiDoDia }>('capi-do-dia').then((s) => setCapiSalva(s ?? null)); }, []);
+  const capiCalculada = useMemo(
+    () => (saida ? capiDoDia({ hoje: hoje(), avisos: saida.avisos, aindaPodeGastar: saida.plano.aindaPodeGastar }) : null),
+    [saida],
+  );
+  useEffect(() => {
+    if (capiSalva === undefined || !capiCalculada || capiSalva?.data === hoje()) return;
+    const nova = { data: hoje(), capi: capiCalculada };
+    setCapiSalva(nova);
+    void gravarAjuste('capi-do-dia', nova);
+  }, [capiSalva, capiCalculada]);
+  const capiDeHoje: CapiDoDia = (capiSalva?.data === hoje() ? capiSalva.capi : capiCalculada) ?? capiDoDia({ hoje: hoje(), avisos: [] });
+  function abrirCapi() {
+    if (capiDeHoje.destino === 'novo-gasto') setFolha({ tipo: 'novo' });
+    else navegar(capiDeHoje.destino);
+  }
 
   // Fechamento mensal: o placar do mês passado. Só calcula quando a tela está aberta.
   const mesFechado = mesParaFechar(hoje());
@@ -355,7 +375,7 @@ export function App() {
           semPlano={onboarding === undefined} onMontarPlano={() => navegar('onboarding')}
           plano={saida?.plano ?? null} metas={metasNaHome} onMetas={() => navegar('metas')}
           previsao={saida?.previsao ?? null} onFatura={() => navegar('fatura')} avisos={saida?.avisos ?? []}
-          comprasParaLembrar={paraLembrar} onResolverCompra={resolverCompra} onPossoComprar={() => navegar('posso-comprar')} onCalendario={() => navegar('calendario')} onFecharMes={() => navegar('fechamento')} onCheckin={() => navegar('checkin')}
+          comprasParaLembrar={paraLembrar} onResolverCompra={resolverCompra} onPossoComprar={() => navegar('posso-comprar')} onCalendario={() => navegar('calendario')} onFecharMes={() => navegar('fechamento')} onCheckin={() => navegar('checkin')} capi={capiDeHoje} onCapi={abrirCapi}
           onLancar={() => setFolha({ tipo: 'novo' })} onEditar={(l) => setFolha({ tipo: 'editar', lancamento: l })} />
       )}
       {ehAba(rota) && <BarraDeBaixo ativa={rota} onLancar={() => setFolha({ tipo: 'novo' })} />}
