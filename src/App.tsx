@@ -22,7 +22,7 @@ import { Onboarding } from './telas/Onboarding';
 import { gravarRegra, lerRegras } from './repositorio/regras';
 import { Ajustes } from './telas/Ajustes';
 import { Atalho } from './telas/Atalho';
-import { Inicio } from './telas/Inicio';
+import { Inicio, type MetaNaHome } from './telas/Inicio';
 import { NovoGasto, type PreenchimentoDoGasto } from './telas/NovoGasto';
 import { centavosParaTexto, hoje, mesDe } from './telas/formato';
 import { navegar, rotaAtual, type Rota } from './telas/rotas';
@@ -104,6 +104,11 @@ export function App() {
     });
   }, [onboarding, fixos, todas, recentes]);
 
+  // Até as Metas chegarem (issue 08), a home mostra a Reserva.
+  const metasNaHome: MetaNaHome[] = saida && saida.diagnostico.reservaRecomendada > 0
+    ? [{ nome: 'Reserva', atual: saida.diagnostico.reservaAtual, progresso: saida.diagnostico.reservaAtual / saida.diagnostico.reservaRecomendada }]
+    : [];
+
   async function concluirOnboarding(respostas: RespostasDoOnboarding) {
     await gravarOnboarding(respostas);
     const sincronizados = sincronizarFixosDoOnboarding(fixos, respostas, onboarding ? mes : mesDe(respostas.respondidoEm));
@@ -180,6 +185,7 @@ export function App() {
       {(rota === 'inicio' || rota === 'lancar') && (
         <Inicio mes={mes} lancamentos={lancamentos} categorias={todas} onAjustes={() => navegar('ajustes')} onAlternarDiscreto={alternarDiscreto}
           semPlano={onboarding === undefined} onMontarPlano={() => navegar('onboarding')}
+          plano={saida?.plano ?? null} metas={metasNaHome}
           onLancar={() => setFolha({ tipo: 'novo' })} onEditar={(l) => setFolha({ tipo: 'editar', lancamento: l })} />
       )}
       {folha && (

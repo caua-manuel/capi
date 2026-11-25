@@ -274,3 +274,10 @@ a { color: var(--bl); text-decoration: none; }
   content: ''; position: absolute; z-index: -1; left: -16px; right: -16px; top: -40px; bottom: -40px;
   background: linear-gradient(180deg, transparent, var(--bg) 40%); pointer-events: none;
 }
+
+/* Home */
+.numero-grande { font-family: var(--fonte-titulo); font-size: 44px; font-weight: 600; line-height: 1.05; letter-spacing: -0.035em; margin-top: 4px; }
+.linha-por-dia {
+  margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, .12);
+  display: flex; justify-content: space-between; align-items: baseline; font-weight: 600;
+}
