@@ -21,6 +21,7 @@ interface Props {
   plano: PlanoDasMetas;
   metas: readonly Meta[];
   renda: Centavos;
+  temDividas: boolean;
   onSalvar: (meta: Meta) => void;
   onApagar: (id: string) => void;
 }
@@ -131,7 +132,7 @@ function linhaDaData(m: MetaNaEscada): string {
   return `Chega em ${ritmo}${cortes}`;
 }
 
-export function Metas({ plano, metas, renda, onSalvar, onApagar }: Props) {
+export function Metas({ plano, metas, renda, temDividas, onSalvar, onApagar }: Props) {
   const [criando, setCriando] = useState(false);
   return (
     <main className="tela tela-detalhe">
@@ -191,6 +192,9 @@ export function Metas({ plano, metas, renda, onSalvar, onApagar }: Props) {
                   <p className="rotulo" style={{ margin: '4px 0 0' }}>
                     Para chegar em 3 anos: <Valor centavos={m.aportePorPrazo.tresAnos} semCentavos />/mês · 5 anos: <Valor centavos={m.aportePorPrazo.cincoAnos} semCentavos /> · 8 anos: <Valor centavos={m.aportePorPrazo.oitoAnos} semCentavos />
                   </p>
+                )}
+                {m.degrau === 2 && temDividas && (
+                  <button type="button" className="link" style={{ width: 'auto', marginTop: 4 }} onClick={() => navegar('dividas')}>Ver avalanche x bola de neve</button>
                 )}
                 {m.internacional && <p className="rotulo" style={{ margin: '4px 0 0' }}>Viagem para fora: compre a moeda aos poucos, para o câmbio não pesar de uma vez.</p>}
               </li>
