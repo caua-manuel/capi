@@ -5,9 +5,13 @@ import type { Cartao, PrevisaoDeFatura } from '../motor/previsao';
 import { Valor } from './discreto';
 import { nomeDoMes } from './formato';
 import { navegar } from './rotas';
+import { Evolucao } from './Evolucao';
+import type { EvolucaoDaFatura } from '../motor/evolucao';
 
 interface Props {
   previsao: PrevisaoDeFatura | null;
+  /** Últimos 6 meses por Grupo; nulo antes do Onboarding. */
+  evolucao?: EvolucaoDaFatura | null;
   cartao: Cartao | undefined;
   categorias: readonly Categoria[];
   onSalvarCartao: (cartao: Cartao) => void;
@@ -34,7 +38,7 @@ function FormCartao({ inicial, onSalvar }: { inicial?: Cartao; onSalvar: (c: Car
 }
 
 /** Tela de número: sem Capi (DESIGN.md). */
-export function Fatura({ previsao, cartao, categorias, onSalvarCartao }: Props) {
+export function Fatura({ previsao, evolucao, cartao, categorias, onSalvarCartao }: Props) {
   const [editando, setEditando] = useState(false);
   const nome = (id: string) => categorias.find((c) => c.id === id)?.nome ?? 'Outros';
   const mes = previsao ? nomeDoMes(previsao.ciclo.vencimento.slice(0, 7)) : '';
@@ -82,6 +86,7 @@ export function Fatura({ previsao, cartao, categorias, onSalvarCartao }: Props) 
                 </ul>
               </section>
             )}
+            {evolucao && <Evolucao evolucao={evolucao} />}
             <p className="rotulo" style={{ margin: '12px 8px 0' }}>
               Soma os gastos do ciclo no cartão, as próximas parcelas, as assinaturas e os Fixos no cartão que ainda vão cair. Os números valem até o último lançamento.
             </p>
