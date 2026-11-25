@@ -22,6 +22,8 @@ import { Dividas } from './telas/Dividas';
 import type { Fatura } from './dominio/fatura';
 import { listarFaturas } from './repositorio/faturas';
 import { Assinaturas } from './telas/Assinaturas';
+import { Fatura as TelaFatura } from './telas/Fatura';
+import type { Cartao } from './motor/previsao';
 import { Cabecalho, Folha } from './componentes/Cabecalho';
 import { mesCurto } from './telas/formato';
 import { PARAMETROS_PADRAO } from './motor/parametros';
@@ -84,10 +86,11 @@ export function App() {
   const [fixos, setFixos] = useState<Fixo[]>([]);
   const [metas, setMetas] = useState<Meta[]>([]);
   const [faturas, setFaturas] = useState<Fatura[]>([]);
+  const [cartao, setCartao] = useState<Cartao | undefined>();
 
   const recarregar = useCallback(async () => {
-    const [lista, r, p, e, o, rec, fx, mt, ft] = await Promise.all([
-      listarLancamentosDoMes(mes), lerRegras(), listarCategoriasProprias(), lerEscondidas(), lerOnboarding(), listarLancamentosDesde(somarMeses(mes, -3)), listarFixos(), listarMetas(), listarFaturas(),
+    const [lista, r, p, e, o, rec, fx, mt, ft, ct] = await Promise.all([
+      listarLancamentosDoMes(mes), lerRegras(), listarCategoriasProprias(), lerEscondidas(), lerOnboarding(), listarLancamentosDesde(somarMeses(mes, -3)), listarFixos(), listarMetas(), listarFaturas(), lerAjuste<Cartao>('cartao'),
     ]);
     setLancamentos(lista);
     setRegras(r);
@@ -97,6 +100,7 @@ export function App() {
     setRecentes(rec);
     setMetas(mt);
     setFaturas(ft);
+    setCartao(ct);
     // Quem respondeu o Onboarding antes dos Fixos existirem ganha os Fixos dele cadastrados.
     if (o && fx.length === 0) {
       const criados = sincronizarFixosDoOnboarding([], o, mesDe(o.respondidoEm));
@@ -113,9 +117,9 @@ export function App() {
     if (!onboarding) return null;
     return calcular({
       hoje: hoje(), onboarding, fixos,
-      categorias: todas, lancamentos: recentes, parametros: PARAMETROS_PADRAO, metas, faturas,
+      categorias: todas, lancamentos: recentes, parametros: PARAMETROS_PADRAO, metas, faturas, cartao,
     });
-  }, [onboarding, fixos, todas, recentes, metas, faturas]);
+  }, [onboarding, fixos, todas, recentes, metas, faturas, cartao]);
 
   // Na home: as Metas que ainda não foram feitas, na ordem da escada.
   const metasNaHome: MetaNaHome[] = (saida?.metas.escada ?? []).filter((m) => !m.feita).slice(0, 3).map((m) => ({
@@ -187,6 +191,10 @@ export function App() {
           <Folha><p className="texto-2">Você não informou dívidas. Se tiver alguma, inclua em Ajustes → Suas respostas.</p></Folha>
         </main>
       )}
+      {rota === 'fatura' && (
+        <TelaFatura previsao={saida?.previsao ?? null} cartao={cartao} categorias={todas}
+          onSalvarCartao={(c) => { setCartao(c); void gravarAjuste('cartao', c); }} />
+      )}
       {rota === 'assinaturas' && <Assinaturas recorrentes={saida?.recorrentes ?? []} />}
       {rota === 'fixos' && (
         <Fixos fixos={fixos} mes={mes} categorias={visiveis}
@@ -212,6 +220,7 @@ export function App() {
         <Inicio mes={mes} lancamentos={lancamentos} categorias={todas} onAjustes={() => navegar('ajustes')} onAlternarDiscreto={alternarDiscreto}
           semPlano={onboarding === undefined} onMontarPlano={() => navegar('onboarding')}
           plano={saida?.plano ?? null} metas={metasNaHome} onMetas={() => navegar('metas')}
+          previsao={saida?.previsao ?? null} onFatura={() => navegar('fatura')}
           onLancar={() => setFolha({ tipo: 'novo' })} onEditar={(l) => setFolha({ tipo: 'editar', lancamento: l })} />
       )}
       {folha && (
