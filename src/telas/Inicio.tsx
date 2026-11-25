@@ -13,9 +13,12 @@ interface Props {
   onEditar: (lancamento: Lancamento) => void;
   onAjustes: () => void;
   onAlternarDiscreto: () => void;
+  /** Ainda não respondeu o Onboarding. */
+  semPlano: boolean;
+  onMontarPlano: () => void;
 }
 
-export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAjustes, onAlternarDiscreto }: Props) {
+export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAjustes, onAlternarDiscreto, semPlano, onMontarPlano }: Props) {
   const discreto = useModoDiscreto();
   const total = lancamentos.reduce((soma, l) => soma + l.valor, 0);
   const nomeDaCategoria = (id: string) => categorias.find((c) => c.id === id)?.nome ?? 'Outros';
@@ -52,6 +55,17 @@ export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAju
             {lancamentos.length === 1 ? '1 lançamento' : `${lancamentos.length} lançamentos`}
           </div>
         </section>
+
+        {semPlano && (
+          <section className="cartao">
+            <h2 className="titulo">Monte seu plano</h2>
+            <p className="texto-2" style={{ margin: '4px 0 12px' }}>8 perguntas rápidas e você vê sua Sobra, seu Status e quanto dá para guardar.</p>
+            <button type="button" className="botao-principal" onClick={onMontarPlano}>
+              Começar
+              <span className="seta"><Icone nome="seta" tamanho={18} traco={2} /></span>
+            </button>
+          </section>
+        )}
 
         {lancamentos.length === 0 ? (
           <section className="cartao" style={{ textAlign: 'center', padding: '24px 18px' }}>

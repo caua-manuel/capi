@@ -214,3 +214,63 @@ a { color: var(--bl); text-decoration: none; }
   border: none; background: none; color: var(--bad); font-weight: 600; min-height: 44px;
   display: flex; align-items: center; justify-content: center; gap: 8px;
 }
+
+/* Onboarding: uma pergunta por tela */
+.onboarding { position: relative; padding-bottom: calc(env(safe-area-inset-bottom) + 120px); }
+.onboarding-topo { display: flex; align-items: center; justify-content: space-between; padding: 0 20px 6px; }
+.contador-passos { width: 44px; text-align: right; font-weight: 600; font-size: 14px; }
+.progresso-passos { display: flex; gap: 6px; padding: 6px 24px 0; }
+.progresso-passos div { flex: 1; height: 4px; border-radius: 2px; background: var(--ln); }
+.progresso-passos div.feito { background: var(--bl); }
+.capi-onboarding { position: absolute; right: 12px; top: calc(env(safe-area-inset-top) + 92px); height: 110px; }
+.onboarding-conteudo { padding: 30px 16px 0; }
+.pergunta { margin: 0 120px 0 8px; font-family: var(--fonte-titulo); font-size: 28px; line-height: 1.12; letter-spacing: -0.025em; font-weight: 600; }
+.pergunta-corpo { margin-top: 24px; display: flex; flex-direction: column; gap: 12px; }
+.chips-livres { display: flex; flex-wrap: wrap; gap: 8px; }
+.link-estimar { align-self: flex-start; border: none; background: none; padding: 10px 8px; min-height: 44px; color: var(--bl); font-weight: 600; font-size: 15px; }
+.ajuda { margin: 0 8px; color: var(--tx2); font-size: 13px; }
+.onboarding-rodape {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom) + 24px);
+  width: min(398px, calc(100% - 32px));
+}
+.campo-dinheiro { display: flex; flex-direction: column; gap: 2px; }
+.campo-dinheiro-linha { display: flex; align-items: baseline; gap: 6px; padding: 6px 14px; border-radius: 18px; background: var(--sf2); }
+.campo-dinheiro input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-size: 17px; font-weight: 600; padding: 4px 0; }
+.campo-dinheiro .moeda { color: var(--tx3); font-weight: 500; }
+.campo-dinheiro.grande .campo-dinheiro-linha { background: transparent; padding: 0; }
+.campo-dinheiro.grande input { font-size: 44px; letter-spacing: -0.035em; }
+.campo-dinheiro.grande .moeda { font-size: 24px; }
+.grade-meses { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.linha-form { display: flex; flex-direction: column; gap: 10px; }
+.linha-dupla { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: end; }
+.linha-dupla > label, .linha-form > label.rotulo { display: flex; flex-direction: column; gap: 4px; }
+.seletor { height: 44px; padding: 0 12px; border: none; border-radius: 14px; background: var(--sf2); color: var(--tx); font-size: 15px; width: 100%; }
+
+/* Diagnóstico */
+.status { display: flex; flex-direction: column; }
+.rotulo-status { align-self: flex-start; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+.estado-ok .rotulo-status { background: var(--oksf); color: var(--ok); }
+.estado-atencao .rotulo-status { background: var(--warnsf); color: var(--warn); }
+.estado-ruim .rotulo-status { background: var(--badsf); color: var(--bad); }
+.estado-azul .rotulo-status { background: var(--blsf); color: var(--bl); }
+.cartao-gelo {
+  margin: 12px 0 0; padding: 18px 8px; border-radius: 26px; color: var(--icetx);
+  background: linear-gradient(160deg, var(--ice1), var(--ice2)); display: flex;
+}
+.coluna-gelo { flex: 1; min-width: 0; padding: 0 10px; display: flex; flex-direction: column; gap: 2px; }
+.coluna-gelo + .coluna-gelo { border-left: 1px solid rgba(13, 23, 48, .1); }
+.cartao-gelo .rotulo { color: var(--tx2); }
+.valor-gelo { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; white-space: nowrap; }
+.lista-divisao, .lista-sinais { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.lista-sinais li { padding: 10px 12px; border-radius: 14px; background: var(--warnsf); color: var(--warn); font-weight: 500; font-size: 14px; }
+.barra-progresso { margin-top: 6px; height: 6px; border-radius: 3px; background: var(--sf2); overflow: hidden; }
+.barra-progresso > div { height: 100%; border-radius: 3px; background: var(--bl); }
+.barra-progresso > div.atencao { background: var(--warn); }
+.barra-progresso > div.ruim { background: var(--bad); }
+@media (prefers-color-scheme: dark) {
+  .coluna-gelo + .coluna-gelo { border-left-color: rgba(255, 255, 255, .1); }
+}
+.onboarding-rodape::before {
+  content: ''; position: absolute; z-index: -1; left: -16px; right: -16px; top: -40px; bottom: -40px;
+  background: linear-gradient(180deg, transparent, var(--bg) 40%); pointer-events: none;
+}
