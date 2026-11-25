@@ -18,7 +18,8 @@ export interface Comparacao {
   bolaDeNeve: Quitacao;
   /** Juros a mais da bola de neve em relação à avalanche. */
   diferencaEmReais: Centavos;
-  diferencaEmMeses: number;
+  /** Nulo quando algum dos métodos não quita em 50 anos. */
+  diferencaEmMeses: number | null;
   recomendado: Metodo;
 }
 
@@ -87,7 +88,7 @@ export function compararMetodos(dividas: readonly Divida[], extraPorMes: Centavo
   return {
     avalanche, bolaDeNeve,
     diferencaEmReais: bolaDeNeve.jurosTotais - avalanche.jurosTotais,
-    diferencaEmMeses: (bolaDeNeve.meses ?? 0) - (avalanche.meses ?? 0),
+    diferencaEmMeses: bolaDeNeve.meses !== null && avalanche.meses !== null ? bolaDeNeve.meses - avalanche.meses : null,
     recomendado: pequenas >= MIN_DE_DIVIDAS_PEQUENAS ? 'bola-de-neve' : 'avalanche',
   };
 }

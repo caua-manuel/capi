@@ -43,7 +43,8 @@ export function editarFixo(fixo: Fixo, aPartirDe: string, mudanca: MudancaNoFixo
   if (!base) throw new Error('Fixo sem versão');
   const nova: VersaoDoFixo = { ...base, ...mudanca, aPartirDe };
   const versoes = [...fixo.versoes.filter((v) => v.aPartirDe !== aPartirDe), nova].sort((a, b) => a.aPartirDe.localeCompare(b.aPartirDe));
-  return { id: fixo.id, versoes };
+  // Editar antes do encerramento mantém o encerramento; editar depois dele traz o Fixo de volta.
+  return fixo.encerradoEm && aPartirDe <= fixo.encerradoEm ? { id: fixo.id, versoes, encerradoEm: fixo.encerradoEm } : { id: fixo.id, versoes };
 }
 
 /** Tira o Fixo a partir de um mês, mantendo os meses anteriores. */

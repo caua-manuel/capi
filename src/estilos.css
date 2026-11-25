@@ -262,7 +262,7 @@ a { color: var(--bl); text-decoration: none; }
 .cartao-gelo .rotulo { color: var(--tx2); }
 .valor-gelo { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; white-space: nowrap; }
 .lista-divisao, .lista-sinais { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
-.lista-sinais li { padding: 10px 12px; border-radius: 14px; background: var(--warnsf); color: var(--warn); font-weight: 500; font-size: 14px; }
+.lista-sinais li { padding: 10px 12px; border-radius: 14px; background: var(--sf2); color: var(--tx); font-weight: 500; font-size: 14px; }
 .barra-progresso { margin-top: 6px; height: 6px; border-radius: 3px; background: var(--sf2); overflow: hidden; }
 .barra-progresso > div { height: 100%; border-radius: 3px; background: var(--bl); }
 .barra-progresso > div.atencao { background: var(--warn); }
