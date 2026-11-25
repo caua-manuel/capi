@@ -52,3 +52,10 @@ const reaisInteiros = new Intl.NumberFormat('pt-BR', { style: 'currency', curren
 export function formatarReaisInteiros(valor: Centavos): string {
   return reaisInteiros.format(Math.round(valor / 100)).replace(/ /g, ' ');
 }
+
+const MESES_CURTOS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
+/** "2027-10" → "out/2027". */
+export function mesCurto(mes: string): string {
+  return `${MESES_CURTOS[Number(mes.slice(5, 7)) - 1] ?? ''}/${mes.slice(0, 4)}`;
+}

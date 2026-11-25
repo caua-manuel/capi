@@ -281,3 +281,12 @@ a { color: var(--bl); text-decoration: none; }
   margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, .12);
   display: flex; justify-content: space-between; align-items: baseline; font-weight: 600;
 }
+
+/* Metas */
+.lista-metas { list-style: none; margin: 0; padding: 0; }
+.numero-meta {
+  width: 28px; height: 28px; flex: none; border-radius: 14px; background: var(--hero2); color: #FFFFFF;
+  display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600;
+}
+.numero-meta.feita { background: var(--oksf); color: var(--ok); }
+@media (prefers-color-scheme: dark) { .numero-meta:not(.feita) { background: var(--sf2); } }

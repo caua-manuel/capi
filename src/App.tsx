@@ -15,6 +15,10 @@ import { sincronizarFixosDoOnboarding } from './motor/fixos';
 import type { Fixo } from './dominio/fixo';
 import { listarFixos, salvarFixo, salvarFixos } from './repositorio/fixos';
 import { Fixos } from './telas/Fixos';
+import type { Meta } from './dominio/meta';
+import { apagarMeta, listarMetas, salvarMeta } from './repositorio/metas';
+import { Metas } from './telas/Metas';
+import { mesCurto } from './telas/formato';
 import { PARAMETROS_PADRAO } from './motor/parametros';
 import { gravarOnboarding, lerOnboarding } from './repositorio/onboarding';
 import { Diagnostico } from './telas/Diagnostico';
@@ -73,10 +77,11 @@ export function App() {
   const [onboarding, setOnboarding] = useState<RespostasDoOnboarding | undefined | null>(null);
   const [recentes, setRecentes] = useState<Lancamento[]>([]);
   const [fixos, setFixos] = useState<Fixo[]>([]);
+  const [metas, setMetas] = useState<Meta[]>([]);
 
   const recarregar = useCallback(async () => {
-    const [lista, r, p, e, o, rec, fx] = await Promise.all([
-      listarLancamentosDoMes(mes), lerRegras(), listarCategoriasProprias(), lerEscondidas(), lerOnboarding(), listarLancamentosDesde(somarMeses(mes, -3)), listarFixos(),
+    const [lista, r, p, e, o, rec, fx, mt] = await Promise.all([
+      listarLancamentosDoMes(mes), lerRegras(), listarCategoriasProprias(), lerEscondidas(), lerOnboarding(), listarLancamentosDesde(somarMeses(mes, -3)), listarFixos(), listarMetas(),
     ]);
     setLancamentos(lista);
     setRegras(r);
@@ -84,6 +89,7 @@ export function App() {
     setEscondidas(e);
     setOnboarding(o);
     setRecentes(rec);
+    setMetas(mt);
     // Quem respondeu o Onboarding antes dos Fixos existirem ganha os Fixos dele cadastrados.
     if (o && fx.length === 0) {
       const criados = sincronizarFixosDoOnboarding([], o, mesDe(o.respondidoEm));
@@ -100,14 +106,14 @@ export function App() {
     if (!onboarding) return null;
     return calcular({
       hoje: hoje(), onboarding, fixos,
-      categorias: todas, lancamentos: recentes, parametros: PARAMETROS_PADRAO,
+      categorias: todas, lancamentos: recentes, parametros: PARAMETROS_PADRAO, metas,
     });
-  }, [onboarding, fixos, todas, recentes]);
+  }, [onboarding, fixos, todas, recentes, metas]);
 
-  // Até as Metas chegarem (issue 08), a home mostra a Reserva.
-  const metasNaHome: MetaNaHome[] = saida && saida.diagnostico.reservaRecomendada > 0
-    ? [{ nome: 'Reserva', atual: saida.diagnostico.reservaAtual, progresso: saida.diagnostico.reservaAtual / saida.diagnostico.reservaRecomendada }]
-    : [];
+  // Na home: as Metas que ainda não foram feitas, na ordem da escada.
+  const metasNaHome: MetaNaHome[] = (saida?.metas.escada ?? []).filter((m) => !m.feita).slice(0, 3).map((m) => ({
+    nome: m.nome, atual: m.atual, progresso: m.progresso, data: m.dataNoRitmo ? mesCurto(m.dataNoRitmo) : undefined,
+  }));
 
   async function concluirOnboarding(respostas: RespostasDoOnboarding) {
     await gravarOnboarding(respostas);
@@ -162,6 +168,11 @@ export function App() {
   return (
     <ProvedorDiscreto ligado={discreto !== false}>
       {rota === 'ajustes' && <Ajustes />}
+      {rota === 'metas' && saida && (
+        <Metas plano={saida.metas} metas={metas} renda={saida.diagnostico.renda}
+          onSalvar={(m) => { setMetas((atuais) => [...atuais.filter((x) => x.id !== m.id), m]); void salvarMeta(m); }}
+          onApagar={(id) => { setMetas((atuais) => atuais.filter((x) => x.id !== id)); void apagarMeta(id); }} />
+      )}
       {rota === 'fixos' && (
         <Fixos fixos={fixos} mes={mes} categorias={visiveis}
           onSalvar={(f) => { setFixos((atuais) => [...atuais.filter((x) => x.id !== f.id), f]); void salvarFixo(f); }} />
@@ -185,7 +196,7 @@ export function App() {
       {(rota === 'inicio' || rota === 'lancar') && (
         <Inicio mes={mes} lancamentos={lancamentos} categorias={todas} onAjustes={() => navegar('ajustes')} onAlternarDiscreto={alternarDiscreto}
           semPlano={onboarding === undefined} onMontarPlano={() => navegar('onboarding')}
-          plano={saida?.plano ?? null} metas={metasNaHome}
+          plano={saida?.plano ?? null} metas={metasNaHome} onMetas={() => navegar('metas')}
           onLancar={() => setFolha({ tipo: 'novo' })} onEditar={(l) => setFolha({ tipo: 'editar', lancamento: l })} />
       )}
       {folha && (
