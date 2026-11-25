@@ -6,6 +6,7 @@ const ITENS: { rota: Rota; icone: NomeDoIcone; titulo: string; descricao: string
   { rota: 'onboarding', icone: 'lapis', titulo: 'Suas respostas', descricao: 'Renda, moradia, fixos, dívidas e objetivos' },
   { rota: 'fixos', icone: 'raio', titulo: 'Fixos', descricao: 'Treino, celular, faculdade: entram sozinhos todo mês' },
   { rota: 'dividas', icone: 'check', titulo: 'Dívidas', descricao: 'Avalanche x bola de neve e texto para renegociar' },
+  { rota: 'assinaturas', icone: 'raio', titulo: 'Assinaturas', descricao: 'Cobranças que se repetem, com custo anual' },
   { rota: 'diagnostico', icone: 'check', titulo: 'Diagnóstico', descricao: 'Sobra, 50-30-20, fôlego e Status' },
   { rota: 'categorias', icone: 'ajustes', titulo: 'Categorias', descricao: 'Criar, renomear e esconder' },
   { rota: 'atalho', icone: 'raio', titulo: 'Atalho do Apple Pay', descricao: 'Lançar sozinho ao pagar por aproximação' },

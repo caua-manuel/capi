@@ -11,6 +11,8 @@ import { planejar, type Plano } from './plano';
 import { planejarMetas, type PlanoDasMetas } from './metas';
 import type { Meta } from '../dominio/meta';
 import { analisarDividas, type AnaliseDasDividas } from './dividas';
+import { detectarRecorrentes, type Recorrente } from './recorrentes';
+import type { Fatura } from '../dominio/fatura';
 
 /** Tudo o que o Motor precisa. As Telas leem do Repositório e passam aqui. */
 export interface EntradaDoMotor {
@@ -25,6 +27,8 @@ export interface EntradaDoMotor {
   parametros: Parametros;
   /** Metas criadas pelo Usuário. */
   metas?: readonly Meta[];
+  /** Faturas já importadas (só as linhas, nunca o texto colado). */
+  faturas?: readonly Fatura[];
 }
 
 export interface MesDoPlano {
@@ -44,6 +48,7 @@ export interface SaidaDoMotor {
   metas: PlanoDasMetas;
   /** Nulo quando não há Dívidas. */
   dividas: AnaliseDasDividas | null;
+  recorrentes: Recorrente[];
 }
 
 /** A função de entrada do Motor: puro, sem tela e sem ler nem gravar dados. */
@@ -62,5 +67,6 @@ export function calcular(e: EntradaDoMotor): SaidaDoMotor {
     rendimentoMensal: e.parametros.rendimentoMensalConservador,
   });
   const dividas = analisarDividas(e.onboarding.dividas, diagnostico.sobra, diagnostico.renda);
-  return { diagnostico, mesDoPlano, plano, metas, dividas };
+  const recorrentes = detectarRecorrentes(e.faturas ?? [], e.parametros.iofInternacional);
+  return { diagnostico, mesDoPlano, plano, metas, dividas, recorrentes };
 }
