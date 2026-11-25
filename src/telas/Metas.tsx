@@ -11,6 +11,7 @@ import {
 import { Valor } from './discreto';
 import type { Dica } from '../motor/dicas';
 import { ListaDeDicas } from '../componentes/Avisos';
+import type { SugestaoDeInvestimento } from '../motor/investir';
 import { mesCurto } from './formato';
 import { navegar } from './rotas';
 
@@ -25,6 +26,8 @@ interface Props {
   renda: Centavos;
   temDividas: boolean;
   dicas: readonly Dica[];
+  /** Sugestão por tipo de produto, quando o objetivo inclui investir. */
+  investimento?: SugestaoDeInvestimento | null;
   onSalvar: (meta: Meta) => void;
   onApagar: (id: string) => void;
 }
@@ -135,7 +138,7 @@ function linhaDaData(m: MetaNaEscada): string {
   return `Chega em ${ritmo}${cortes}`;
 }
 
-export function Metas({ plano, metas, renda, temDividas, dicas, onSalvar, onApagar }: Props) {
+export function Metas({ plano, metas, renda, temDividas, dicas, investimento, onSalvar, onApagar }: Props) {
   const [criando, setCriando] = useState(false);
   return (
     <main className="tela tela-detalhe">
@@ -205,6 +208,20 @@ export function Metas({ plano, metas, renda, temDividas, dicas, onSalvar, onApag
           })}
         </ol>
 
+        {investimento && (
+          <section className="cartao" style={{ margin: '12px 0 0' }} aria-label="Começar a investir">
+            <h2 className="titulo">Começar a investir</h2>
+            <p className="rotulo" style={{ margin: '2px 0 8px' }}>
+              Seu perfil: {investimento.perfil} · prazo {investimento.prazo === 'ate-2-anos' ? 'até 2 anos' : investimento.prazo === 'de-2-a-5-anos' ? 'de 2 a 5 anos' : 'acima de 5 anos'}
+            </p>
+            <p style={{ margin: 0, fontWeight: 600 }}>{investimento.produto}</p>
+            <p className="texto-2" style={{ margin: '4px 0 0' }}>{investimento.explicacao}</p>
+            <p style={{ margin: '8px 0 0' }}>{investimento.primeiroPasso}</p>
+            <p className="rotulo" style={{ margin: '8px 0 0', color: 'var(--tx3)' }}>
+              Educativo, sem recomendar banco nem ativo. Antes de investir, compare taxas e prazos.
+            </p>
+          </section>
+        )}
         <ListaDeDicas dicas={dicas} />
 
         {criando ? (

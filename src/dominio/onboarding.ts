@@ -17,6 +17,17 @@ export type Objetivo =
   | 'organizar'
   | 'aposentadoria';
 
+/** Se o investimento caísse 20% em um mês, a pessoa venderia, esperaria ou compraria mais. */
+export type ToleranciaAPerda = 'vende' | 'espera' | 'compra-mais';
+export type PrazoDoDinheiro = 'ate-2-anos' | 'de-2-a-5-anos' | 'mais-de-5-anos';
+export type ExperienciaComInvestir = 'nenhuma' | 'pouca' | 'bastante';
+
+export interface PerfilDeInvestidor {
+  tolerancia: ToleranciaAPerda;
+  prazo: PrazoDoDinheiro;
+  experiencia: ExperienciaComInvestir;
+}
+
 export interface Divida {
   id: string;
   nome: string;
@@ -74,6 +85,10 @@ export interface RespostasDoOnboarding {
   objetivos: Objetivo[];
   /** Pergunta extra da Reserva: alguém depende de você? */
   temDependentes?: boolean;
+  /** Pergunta extra das Dívidas: quanto paga por mês além das parcelas. Sem resposta, vale a Sobra. */
+  pagaAlemDasParcelas?: Centavos;
+  /** Só quando o objetivo inclui investir: as 3 perguntas de perfil. */
+  perfilDeInvestidor?: PerfilDeInvestidor;
   /** Perguntas marcadas como "não sei / estimar". */
   estimado: string[];
   /** Quando o Onboarding foi respondido, AAAA-MM-DD. */
