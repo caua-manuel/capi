@@ -22,6 +22,7 @@ interface Props {
   plano: Plano | null;
   /** Barras de Metas para a home. */
   metas: MetaNaHome[];
+  onMetas: () => void;
 }
 
 export interface MetaNaHome {
@@ -41,7 +42,7 @@ function atualizadoEm(lancamentos: readonly Lancamento[]): string | null {
   return `${dois(d.getDate())}/${dois(d.getMonth() + 1)}, ${dois(d.getHours())}:${dois(d.getMinutes())}`;
 }
 
-export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAjustes, onAlternarDiscreto, semPlano, onMontarPlano, plano, metas }: Props) {
+export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAjustes, onAlternarDiscreto, semPlano, onMontarPlano, plano, metas, onMetas }: Props) {
   const discreto = useModoDiscreto();
   const total = lancamentos.reduce((soma, l) => soma + l.valor, 0);
   const nomeDaCategoria = (id: string) => categorias.find((c) => c.id === id)?.nome ?? 'Outros';
@@ -113,7 +114,10 @@ export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAju
 
         {metas.length > 0 && (
           <section className="cartao" aria-label="Metas">
-            <h2 className="titulo">Metas</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 className="titulo">Metas</h2>
+              <button type="button" className="link" style={{ width: 'auto', textAlign: 'right' }} onClick={onMetas}>Ver todas</button>
+            </div>
             <ul className="lista-divisao">
               {metas.map((m) => (
                 <li key={m.nome}>
