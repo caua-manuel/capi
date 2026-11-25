@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import type { Categoria } from '../dominio/categorias';
 import type { Lancamento } from '../dominio/lancamento';
 import { Icone, type NomeDoIcone } from '../componentes/Icone';
@@ -10,7 +10,7 @@ import type { CompraEmEspera } from '../motor/compra';
 import { ListaDeAvisos } from '../componentes/Avisos';
 import { Valor, useModoDiscreto } from './discreto';
 import { hoje, nomeDoMes, rotuloDaData, saudacao, semanaDoMes } from './formato';
-import { capiDoDia } from './capiDoDia';
+import type { CapiDoDia } from '../motor/capiDoDia';
 
 interface Props {
   mes: string;
@@ -38,6 +38,10 @@ interface Props {
   onCalendario: () => void;
   onFecharMes: () => void;
   onCheckin: () => void;
+  /** A Capi do dia, escolhida pelo Motor e fixa durante o dia. */
+  capi: CapiDoDia;
+  /** Toque na Capi do dia: leva para a tela ligada à frase. */
+  onCapi: () => void;
 }
 
 export interface MetaNaHome {
@@ -91,13 +95,11 @@ function Atalho({ icone, rotulo, azul, onClick, aria }: { icone: NomeDoIcone; ro
   );
 }
 
-export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAlternarDiscreto, semPlano, onMontarPlano, plano, metas, onMetas, previsao, onFatura, avisos, comprasParaLembrar, onResolverCompra, onPossoComprar, onCalendario, onFecharMes, onCheckin }: Props) {
+export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAlternarDiscreto, semPlano, onMontarPlano, plano, metas, onMetas, previsao, onFatura, avisos, comprasParaLembrar, onResolverCompra, onPossoComprar, onCalendario, onFecharMes, onCheckin, capi, onCapi }: Props) {
   const discreto = useModoDiscreto();
-  const [trocas, setTrocas] = useState(0);
   const total = lancamentos.reduce((soma, l) => soma + l.valor, 0);
   const nomeDaCategoria = (id: string) => categorias.find((c) => c.id === id)?.nome ?? 'Outros';
   const base = import.meta.env.BASE_URL;
-  const capi = capiDoDia({ hoje: hoje(), avisos, aindaPodeGastar: plano?.aindaPodeGastar }, trocas);
   const nomeDoMesAtual = nomeDoMes(mes);
   const mesComMaiuscula = nomeDoMesAtual.charAt(0).toUpperCase() + nomeDoMesAtual.slice(1);
 
@@ -128,8 +130,8 @@ export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAlt
           <h1 className="saudacao-mes" style={{ margin: 0 }}>{mesComMaiuscula}, semana {semanaDoMes(hoje())}</h1>
           <p className="texto-2" style={{ fontSize: 14, margin: '6px 0 0', lineHeight: 1.35 }}>{capi.frase}</p>
         </div>
-        <button type="button" className="capi-do-dia" aria-label="Capi do dia (toque para trocar)" onClick={() => setTrocas(trocas + 1)}>
-          <img className="capi" src={`${base}capi/${capi.imagem}`} alt="" />
+        <button type="button" className="capi-do-dia" aria-label={`Capi do dia: ${capi.frase}`} onClick={onCapi}>
+          <img className="capi" src={`${base}capi/dia-${capi.figurinha}.png`} alt="" />
         </button>
       </div>
 

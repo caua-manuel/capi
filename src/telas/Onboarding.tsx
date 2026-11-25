@@ -105,6 +105,8 @@ function Pergunta({ linha1, linha2, children }: { linha1: string; linha2: string
 
 export function Onboarding({ inicial, categorias, salarioMinimo, onConcluir, onSair }: Props) {
   const [passo, setPasso] = useState(0);
+  // Quem já respondeu antes (editando as respostas) pula as boas-vindas.
+  const [boasVindasFeitas, setBoasVindasFeitas] = useState(Boolean(inicial));
   const [r, setR] = useState<Rascunho>(() => rascunhoDe(inicial));
   const mudar = (parcial: Partial<Rascunho>) => setR((atual) => ({ ...atual, ...parcial }));
   const estimar = (pergunta: string, parcial: Partial<Rascunho>) =>
@@ -145,6 +147,24 @@ export function Onboarding({ inicial, categorias, salarioMinimo, onConcluir, onS
   const voltar = () => (passo === 0 ? onSair() : setPasso(passo - 1));
   const mudarFixo = (id: string, parcial: Partial<FixoDeclarado>) => mudar({ fixos: r.fixos.map((f) => (f.id === id ? { ...f, ...parcial } : f)) });
   const mudarDivida = (id: string, parcial: Partial<Divida>) => mudar({ dividas: r.dividas.map((d) => (d.id === id ? { ...d, ...parcial } : d)) });
+
+  if (!boasVindasFeitas) {
+    return (
+      <main className="tela boas-vindas">
+        <img className="capi" src={`${base}capi/capi-acena.png`} alt="" style={{ height: 220 }} />
+        <h1 className="titulo-grande" style={{ marginTop: 20 }}>Oi, eu sou a Capi.<br /><span className="texto-2">Vou cuidar do seu dinheiro de bolso.</span></h1>
+        <p className="texto-2" style={{ margin: '12px 0 0', maxWidth: 300 }}>
+          Faço poucas perguntas, mostro como está sua situação e monto um plano do mês. Seus dados ficam só neste celular.
+        </p>
+        <div className="boas-vindas-rodape">
+          <button type="button" className="botao-principal" onClick={() => setBoasVindasFeitas(true)}>
+            Começar
+            <span className="seta"><Icone nome="seta" tamanho={18} traco={2} /></span>
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="tela onboarding">
