@@ -409,3 +409,18 @@ a { color: var(--bl); text-decoration: none; }
 .compromisso-texto { flex: 1; min-width: 0; }
 .compromisso-nome { font-weight: 600; overflow-wrap: anywhere; }
 .compromisso-valor { font-weight: 600; flex: none; }
+
+/* E se… (simulador) */
+.ese-hero { margin-top: 18px; }
+.ese-hero .sub { font-size: 13px; color: var(--herotx2); }
+.ese-hero .numero-grande { font-size: 42px; font-weight: 600; line-height: 1.1; letter-spacing: -0.035em; }
+.ese-delta { display: inline-block; margin-top: 6px; padding: 6px 12px; border-radius: 14px; background: #FFFFFF; color: #0D1730; font-weight: 600; font-size: 13px; }
+.ese-controles { display: flex; flex-direction: column; gap: 0; }
+.ese-controle { padding: 10px 0; display: flex; flex-direction: column; gap: 10px; }
+.ese-controle + .ese-controle { border-top: 1px solid var(--ln); }
+.ese-linha { display: flex; justify-content: space-between; gap: 12px; font-size: 15px; }
+.ese-linha label { font-weight: 500; }
+.ese-linha .num { font-weight: 600; }
+.ese-controle input[type=range] { width: 100%; min-height: 44px; accent-color: var(--bl); margin: 0; }
+.ese-aporte { justify-content: space-between; align-items: center; padding: 16px 18px; }
+.acao-fixa { position: fixed; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom) + 26px); max-width: 430px; margin: 0 auto; padding: 0 16px; z-index: 5; }

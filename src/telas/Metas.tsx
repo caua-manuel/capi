@@ -227,7 +227,10 @@ export function Metas({ plano, metas, renda, temDividas, dicas, investimento, on
         {criando ? (
           <NovaMeta renda={renda} onSalvar={(m) => { onSalvar(m); setCriando(false); }} onCancelar={() => setCriando(false)} />
         ) : (
-          <button type="button" className="chip chip-novo" style={{ marginTop: 12 }} onClick={() => setCriando(true)}>+ Nova meta</button>
+          <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+            <button type="button" className="chip chip-novo" onClick={() => setCriando(true)}>+ Nova meta</button>
+            {metas.length > 0 && <button type="button" className="chip" onClick={() => navegar('ese')}>E se…</button>}
+          </div>
         )}
         <p className="rotulo" style={{ textAlign: 'center', margin: '16px 8px 0', color: 'var(--tx3)' }}>
           O dinheiro vai para o degrau de baixo antes de subir; metas com data recebem a parte delas desde já. Plano educativo, não é recomendação de investimento.

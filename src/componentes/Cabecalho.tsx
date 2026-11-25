@@ -7,10 +7,12 @@ interface Props {
   onVoltar: () => void;
   /** Imagem da Capi, quando a tela tiver uma. */
   capi?: string;
+  /** Conteúdo extra do cabeçalho, abaixo do título (um número grande, por exemplo). */
+  children?: ReactNode;
 }
 
 /** Cabeçalho marinho das telas de detalhe, com o título em duas linhas e a folha subindo por cima. */
-export function Cabecalho({ linha1, linha2, onVoltar, capi }: Props) {
+export function Cabecalho({ linha1, linha2, onVoltar, capi, children }: Props) {
   return (
     <header className="cabecalho">
       <button type="button" className="botao-voltar" aria-label="Voltar" onClick={onVoltar}>
@@ -24,6 +26,7 @@ export function Cabecalho({ linha1, linha2, onVoltar, capi }: Props) {
         </h1>
         {capi && <img className="capi" src={`${import.meta.env.BASE_URL}capi/${capi}`} alt="" style={{ height: 110 }} />}
       </div>
+      {children}
     </header>
   );
 }

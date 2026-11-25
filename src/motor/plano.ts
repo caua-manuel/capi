@@ -35,6 +35,11 @@ export interface Plano {
   mesSemTetos: boolean;
 }
 
+/** Ajustes que o Usuário aplicou pelo simulador "E se…": quanto cortou do Teto de cada Categoria. */
+export interface AjustesDoPlano {
+  cortes: Record<string, Centavos>;
+}
+
 // Regras de estado das barras (DESIGN.md e motor-financeiro.md).
 const ATENCAO_A_PARTIR_DE = 0.85;
 const MESES_DE_HISTORICO = 3;
@@ -48,6 +53,21 @@ export interface EntradaDoPlano {
   fixosDoMes: readonly OcorrenciaDeFixo[];
   categorias: readonly Categoria[];
   lancamentos: readonly Lancamento[];
+}
+
+function estadoDoUso(uso: number): EstadoDoTeto {
+  return uso > 1 ? 'estourado' : uso >= ATENCAO_A_PARTIR_DE ? 'atencao' : 'normal';
+}
+
+/** Tira dos Tetos o que o Usuário cortou, refazendo restante, uso e estado. */
+export function aplicarCortes(tetos: readonly TetoDaCategoria[], cortes: Readonly<Record<string, Centavos>>): TetoDaCategoria[] {
+  return tetos.map((t) => {
+    const corte = cortes[t.categoriaId] ?? 0;
+    if (corte <= 0) return t;
+    const teto = Math.max(0, t.teto - corte);
+    const uso = teto > 0 ? t.gasto / teto : t.gasto > 0 ? Number.POSITIVE_INFINITY : 0;
+    return { ...t, teto, restante: teto - t.gasto, uso, estado: estadoDoUso(uso) };
+  });
 }
 
 export function planejar(e: EntradaDoPlano): Plano {
@@ -92,7 +112,7 @@ export function planejar(e: EntradaDoPlano): Plano {
   const tetos: TetoDaCategoria[] = [...tetoBase].map(([categoriaId, teto]) => {
     const gasto = gastoPorCategoria.get(categoriaId) ?? 0;
     const uso = teto > 0 ? gasto / teto : gasto > 0 ? Number.POSITIVE_INFINITY : 0;
-    const estado: EstadoDoTeto = uso > 1 ? 'estourado' : uso >= ATENCAO_A_PARTIR_DE ? 'atencao' : 'normal';
+    const estado = estadoDoUso(uso);
     return { categoriaId, teto, gasto, restante: teto - gasto, uso, estado, media: Math.round(media.get(categoriaId) ?? 0) };
   }).sort((a, b) => b.teto - a.teto);
 
