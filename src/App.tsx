@@ -30,7 +30,8 @@ import type { AvisoMostrado } from './motor/avisos';
 import { Cabecalho, Folha } from './componentes/Cabecalho';
 import { BarraDeBaixo, ehAba } from './componentes/BarraDeBaixo';
 import { mesCurto } from './telas/formato';
-import { PARAMETROS_PADRAO } from './motor/parametros';
+import { gravarParametros, lerParametros, parametrosPadraoSalvos, type ParametrosSalvos } from './repositorio/parametros';
+import { Parametros, resumoDosParametros } from './telas/Parametros';
 import { gravarOnboarding, lerOnboarding } from './repositorio/onboarding';
 import { Diagnostico } from './telas/Diagnostico';
 import { Onboarding } from './telas/Onboarding';
@@ -91,6 +92,12 @@ export function App() {
   const [metas, setMetas] = useState<Meta[]>([]);
   const [faturas, setFaturas] = useState<Fatura[]>([]);
   const [cartao, setCartao] = useState<Cartao | undefined>();
+  const [parametros, setParametros] = useState<ParametrosSalvos>(parametrosPadraoSalvos);
+  useEffect(() => { void lerParametros().then(setParametros); }, []);
+  function salvarParametros(novos: ParametrosSalvos) {
+    setParametros(novos);
+    void gravarParametros(novos);
+  }
   const [avisosMostrados, setAvisosMostrados] = useState<AvisoMostrado[]>([]);
   // Última abertura antes de hoje, lida uma vez, para o Aviso "sumiu".
   const [ultimaAbertura, setUltimaAbertura] = useState<string | undefined>();
@@ -133,9 +140,9 @@ export function App() {
     if (!onboarding) return null;
     return {
       hoje: hoje(), onboarding, fixos,
-      categorias: todas, lancamentos: recentes, parametros: PARAMETROS_PADRAO, metas, faturas, cartao, avisosMostrados, ultimaAbertura,
+      categorias: todas, lancamentos: recentes, parametros: parametros.valores, metas, faturas, cartao, avisosMostrados, ultimaAbertura,
     };
-  }, [onboarding, fixos, todas, recentes, metas, faturas, cartao, avisosMostrados, ultimaAbertura]);
+  }, [onboarding, fixos, todas, recentes, metas, faturas, cartao, avisosMostrados, ultimaAbertura, parametros]);
   const saida = useMemo(() => (entradaDoMotor ? calcular(entradaDoMotor) : null), [entradaDoMotor]);
 
   // Regra das 24 horas: compras guardadas e as que já passaram de 24 h.
@@ -223,8 +230,10 @@ export function App() {
     <ProvedorDiscreto ligado={discreto !== false}>
       {rota === 'ajustes' && (
         <Ajustes discreto={discreto === true} onAlternarDiscreto={alternarDiscreto} quantidadeDeFixos={fixos.length}
-          categoriasPadrao={todas.length - proprias.length} categoriasProprias={proprias.length} />
+          categoriasPadrao={todas.length - proprias.length} categoriasProprias={proprias.length}
+          resumoDosParametros={resumoDosParametros(parametros.valores)} />
       )}
+      {rota === 'parametros' && <Parametros salvos={parametros} hoje={hoje()} onSalvar={salvarParametros} />}
       {rota === 'metas' && saida && (
         <Metas plano={saida.metas} metas={metas} renda={saida.diagnostico.renda} temDividas={saida.dividas !== null} dicas={saida.dicas}
           onSalvar={(m) => { setMetas((atuais) => [...atuais.filter((x) => x.id !== m.id), m]); void salvarMeta(m); }}
@@ -250,14 +259,14 @@ export function App() {
           onSalvar={(f) => { setFixos((atuais) => [...atuais.filter((x) => x.id !== f.id), f]); void salvarFixo(f); }} />
       )}
       {rota === 'onboarding' && onboarding !== null && (
-        <Onboarding inicial={onboarding} categorias={visiveis} salarioMinimo={PARAMETROS_PADRAO.salarioMinimo}
+        <Onboarding inicial={onboarding} categorias={visiveis} salarioMinimo={parametros.valores.salarioMinimo}
           onConcluir={(r) => void concluirOnboarding(r)} onSair={() => navegar(onboarding ? 'ajustes' : 'inicio')} />
       )}
       {rota === 'diagnostico' && saida && (
         <Diagnostico diagnostico={saida.diagnostico} onVoltar={() => navegar('inicio')} onContinuar={() => navegar('inicio')} />
       )}
       {rota === 'diagnostico' && onboarding === undefined && (
-        <Onboarding categorias={visiveis} salarioMinimo={PARAMETROS_PADRAO.salarioMinimo}
+        <Onboarding categorias={visiveis} salarioMinimo={parametros.valores.salarioMinimo}
           onConcluir={(r) => void concluirOnboarding(r)} onSair={() => navegar('inicio')} />
       )}
       {rota === 'atalho' && <Atalho />}

@@ -8,6 +8,7 @@ interface Props {
   quantidadeDeFixos: number;
   categoriasPadrao: number;
   categoriasProprias: number;
+  resumoDosParametros: string;
 }
 
 interface Item {
@@ -44,13 +45,14 @@ function Grupo({ titulo, children }: { titulo: string; children: ReactNode }) {
   );
 }
 
-export function Ajustes({ discreto, onAlternarDiscreto, quantidadeDeFixos, categoriasPadrao, categoriasProprias }: Props) {
+export function Ajustes({ discreto, onAlternarDiscreto, quantidadeDeFixos, categoriasPadrao, categoriasProprias, resumoDosParametros }: Props) {
   const itensDoPlano: Item[] = [
     { rota: 'onboarding', icone: 'lapis', titulo: 'Suas respostas', descricao: 'Renda, moradia, fixos, dívidas e objetivos' },
     { rota: 'fixos', icone: 'calendario', titulo: 'Fixos', descricao: quantidadeDeFixos === 0 ? 'Nenhum cadastrado ainda' : quantidadeDeFixos === 1 ? '1 item, entra sozinho todo mês' : `${quantidadeDeFixos} itens, entram sozinhos todo mês` },
     { rota: 'dividas', icone: 'recibo', titulo: 'Dívidas', descricao: 'Avalanche x bola de neve e texto para renegociar' },
     { rota: 'assinaturas', icone: 'repetir', titulo: 'Assinaturas', descricao: 'Cobranças que se repetem, com custo anual' },
     { rota: 'diagnostico', icone: 'grafico', titulo: 'Diagnóstico', descricao: 'Sobra, 50-30-20, fôlego e Status' },
+    { rota: 'parametros', icone: 'percentual', titulo: 'Parâmetros', descricao: resumoDosParametros },
     { rota: 'categorias', icone: 'etiqueta', titulo: 'Categorias', descricao: `${categoriasPadrao} padrão · ${categoriasProprias} ${categoriasProprias === 1 ? 'sua' : 'suas'}` },
   ];
 
