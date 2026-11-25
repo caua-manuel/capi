@@ -1,43 +1,72 @@
-name: Publicar no GitHub Pages
+name: Verificações e GitHub Pages
 
 on:
+  pull_request:
   push:
     branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build:
+  verificar-e-construir:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Base real do repositório (nome: capi); build e artefato usam a mesma.
+      VITE_BASE_PATH: /capi/
+    permissions:
+      contents: read
+      pages: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Obter código
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: 22
+          persist-credentials: false
+      - name: Preparar Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
           cache: npm
-      - run: npm ci
-      - run: npm run test
-      - run: npm run build
-        env:
-          GITHUB_PAGES: 'true'
-      - run: cp dist/index.html dist/404.html
-      - uses: actions/upload-pages-artifact@v3
+      - name: Instalar dependências fixadas
+        run: npm ci
+      - name: Verificar dependências de produção conhecidas
+        # Só o que vai para o app. As 4 falhas moderadas de glob/minimatch ficam só nas ferramentas de build (vite-plugin-pwa).
+        run: npm audit --omit=dev --audit-level=moderate
+      - name: Testar
+        run: npm run test
+      - name: Construir
+        run: npm run build
+      - name: Preparar páginas diretas (GitHub Pages devolve 404.html para /capi/atalho e /capi/lancar)
+        run: cp dist/index.html dist/404.html
+      - name: Preparar GitHub Pages
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.PUBLICAR_PAGES == 'true'
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - name: Enviar somente dist
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.PUBLICAR_PAGES == 'true'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: dist
-  deploy:
-    needs: build
+
+  publicar:
+    # Trava: só publica com a variável de repositório PUBLICAR_PAGES = 'true'.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.PUBLICAR_PAGES == 'true'
+    needs: verificar-e-construir
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Publicar artefato verificado
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

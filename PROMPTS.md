@@ -44,7 +44,7 @@ REGRAS
 ```
 Esta sessão é OPUS. Leia o CLAUDE.md (inclusive "Fases e modelos"), GLOSSARY.md, DESIGN.md, docs/adr/ e docs/motor-financeiro.md. Não explique os passos: faça e, ao terminar cada issue, me entregue o relatório (o que mudou, o que testar, detalhes).
 
-Trabalhe só issues com o rótulo modelo:opus, na ordem da fronteira (docs/agents/issue-tracker.md): 05 → 07 → 08 → 09 → 12 → 11 → 14 → 17 → 16. A 10 (importador do PicPay) só quando eu colar o texto real da fatura; pule-a até lá.
+Trabalhe só issues com o rótulo modelo:opus, na ordem: 05 → 06 → 07 → 08 → 09 → 12 → 11 → 14 → 17 → 16. Exceção: faça também a 06 (Fixos, modelo:sonnet) logo depois da 05, porque a 07 e a 11 dependem dela. Crie a tabela de Parâmetros dentro do Motor desde a 05 (a tela de Ajustes da 21 fica para a Fase C). A 10 (importador do PicPay) só quando eu colar o texto real da fatura; pule-a até lá.
 
 Para cada issue:
 a. Atribua a mim, rótulo em-andamento, branch NN-slug.
