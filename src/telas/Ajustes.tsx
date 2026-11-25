@@ -5,6 +5,8 @@ import type { Aparencia } from './aparencia';
 
 interface Props {
   discreto: boolean;
+  /** Está no Safari do iPhone, fora da Tela de Início: mostra o atalho para a tela de instalação. */
+  podeInstalar: boolean;
   aparencia: Aparencia;
   onMudarAparencia: (a: Aparencia) => void;
   onAlternarDiscreto: () => void;
@@ -49,7 +51,7 @@ function Grupo({ titulo, children }: { titulo: string; children: ReactNode }) {
   );
 }
 
-export function Ajustes({ discreto, aparencia, onMudarAparencia, onAlternarDiscreto, quantidadeDeFixos, categoriasPadrao, categoriasProprias, resumoDosParametros, resumoDoBackup }: Props) {
+export function Ajustes({ discreto, podeInstalar, aparencia, onMudarAparencia, onAlternarDiscreto, quantidadeDeFixos, categoriasPadrao, categoriasProprias, resumoDosParametros, resumoDoBackup }: Props) {
   const itensDoPlano: Item[] = [
     { rota: 'onboarding', icone: 'lapis', titulo: 'Suas respostas', descricao: 'Renda, moradia, fixos, dívidas e objetivos' },
     { rota: 'fixos', icone: 'calendario', titulo: 'Fixos', descricao: quantidadeDeFixos === 0 ? 'Nenhum cadastrado ainda' : quantidadeDeFixos === 1 ? '1 item, entra sozinho todo mês' : `${quantidadeDeFixos} itens, entram sozinhos todo mês` },
@@ -90,6 +92,9 @@ export function Ajustes({ discreto, aparencia, onMudarAparencia, onAlternarDiscr
 
       <Grupo titulo="Atalhos do iPhone">
         <Linha icone="raio" titulo="Lançar pelo Apple Pay" descricao="Abre o app preenchido ao pagar" fim={seta} onClick={() => navegar('atalho')} />
+        {podeInstalar && (
+          <Linha icone="casa" titulo="Instalar na Tela de Início" descricao="Os dados ficam no app instalado, não no navegador" fim={seta} onClick={() => navegar('instalar')} />
+        )}
         <Linha icone="sino" titulo="Lembretes" descricao="Check-in, dia do pagamento e fechamento" fim={seta} onClick={() => navegar('lembretes')} />
       </Grupo>
 

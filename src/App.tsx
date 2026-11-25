@@ -51,6 +51,8 @@ import { Diagnostico } from './telas/Diagnostico';
 import { Onboarding } from './telas/Onboarding';
 import { gravarRegra, lerRegras } from './repositorio/regras';
 import { Ajustes } from './telas/Ajustes';
+import { Instalar } from './telas/Instalar';
+import { lerAmbiente, precisaInstalar } from './telas/instalacao';
 import { aparenciaSalva, aplicarAparencia, CHAVE_APARENCIA, guardarAparencia, ouvirTemaDoAparelho, type Aparencia } from './telas/aparencia';
 import { Atalho } from './telas/Atalho';
 import { Inicio, type MetaNaHome } from './telas/Inicio';
@@ -85,6 +87,13 @@ export function App() {
   useEffect(() => {
     void lerAjuste<boolean>(CHAVE_MODO_DISCRETO).then((salvo) => setDiscreto(salvo ?? false));
   }, []);
+
+  const [precisaDeInstalacao] = useState(() => precisaInstalar(lerAmbiente()));
+  // Nulo enquanto lê a escolha salva de continuar no navegador.
+  const [instalacaoDispensada, setInstalacaoDispensada] = useState<boolean | null>(precisaDeInstalacao ? null : true);
+  useEffect(() => {
+    if (precisaDeInstalacao) void lerAjuste<boolean>('instalacao-dispensada').then((v) => setInstalacaoDispensada(v === true));
+  }, [precisaDeInstalacao]);
 
   const [aparencia, setAparencia] = useState<Aparencia>(aparenciaSalva);
   useEffect(() => {
@@ -318,10 +327,26 @@ export function App() {
 
   const fechar = useCallback(() => setFolha(null), []);
 
+  // Instalar antes de começar (ADR 0002): no Safari do iPhone os dados não passam para o app instalado.
+  const mostraInstalacao = rota === 'instalar' || (instalacaoDispensada === false && rota !== 'backup');
+  if (precisaDeInstalacao && instalacaoDispensada === null && rota !== 'backup' && rota !== 'instalar') return null;
+  if (precisaDeInstalacao && mostraInstalacao) {
+    return (
+      <ProvedorDiscreto ligado={discreto !== false}>
+        <Instalar temDados={onboarding != null || recentes.length > 0} onExportar={() => navegar('backup')}
+          onContinuar={() => {
+            setInstalacaoDispensada(true);
+            void gravarAjuste('instalacao-dispensada', true);
+            navegar(rota === 'instalar' ? 'ajustes' : rota, true);
+          }} />
+      </ProvedorDiscreto>
+    );
+  }
+
   return (
     <ProvedorDiscreto ligado={discreto !== false}>
       {rota === 'ajustes' && (
-        <Ajustes discreto={discreto === true} onAlternarDiscreto={alternarDiscreto} aparencia={aparencia} onMudarAparencia={mudarAparencia} quantidadeDeFixos={fixos.length}
+        <Ajustes discreto={discreto === true} onAlternarDiscreto={alternarDiscreto} aparencia={aparencia} onMudarAparencia={mudarAparencia} podeInstalar={precisaDeInstalacao} quantidadeDeFixos={fixos.length}
           categoriasPadrao={todas.length - proprias.length} categoriasProprias={proprias.length}
           resumoDosParametros={resumoDosParametros(parametros.valores)}
           resumoDoBackup={ultimoBackup ? `Último há ${Math.max(0, Math.round((Date.parse(hoje()) - Date.parse(ultimoBackup)) / 86400000))} dias` : 'Você ainda não exportou'} />
