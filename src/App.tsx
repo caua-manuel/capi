@@ -34,6 +34,8 @@ import { gravarParametros, lerParametros, parametrosPadraoSalvos, type Parametro
 import { Parametros, resumoDosParametros } from './telas/Parametros';
 import { montarCalendario } from './motor/calendario';
 import { Calendario } from './telas/Calendario';
+import { fecharMes, mesParaFechar } from './motor/fechamento';
+import { Fechamento } from './telas/Fechamento';
 import { gravarOnboarding, lerOnboarding } from './repositorio/onboarding';
 import { Diagnostico } from './telas/Diagnostico';
 import { Onboarding } from './telas/Onboarding';
@@ -154,6 +156,31 @@ export function App() {
     });
   }, [onboarding, saida, fixos, faturas, cartao]);
 
+  // Fechamento mensal: o placar do mês passado. Só calcula quando a tela está aberta.
+  const mesFechado = mesParaFechar(hoje());
+  const placar = useMemo(
+    () => (rota === 'fechamento' && entradaDoMotor ? fecharMes(entradaDoMotor, mesFechado) : null),
+    [rota, entradaDoMotor, mesFechado],
+  );
+  const [fechamentosComAporte, setFechamentosComAporte] = useState<string[]>([]);
+  const [ultimoBackup, setUltimoBackup] = useState<string | undefined>();
+  useEffect(() => {
+    void lerAjuste<string[]>('fechamentos-com-aporte').then((l) => setFechamentosComAporte(l ?? []));
+    void lerAjuste<string>('ultimo-backup').then(setUltimoBackup);
+  }, []);
+  function virarAporte() {
+    if (!placar?.aporteExtra) return;
+    const { metaId, valor } = placar.aporteExtra;
+    const meta = metas.find((m) => m.id === metaId);
+    if (!meta) return;
+    const atualizada = { ...meta, valorAtual: meta.valorAtual + valor };
+    setMetas((atuais) => atuais.map((m) => (m.id === metaId ? atualizada : m)));
+    void salvarMeta(atualizada);
+    const lista = [...fechamentosComAporte, placar.mes];
+    setFechamentosComAporte(lista);
+    void gravarAjuste('fechamentos-com-aporte', lista);
+  }
+
   // Regra das 24 horas: compras guardadas e as que já passaram de 24 h.
   const [emEspera, setEmEspera] = useState<CompraEmEspera[]>([]);
   useEffect(() => { void lerAjuste<CompraEmEspera[]>('compras-24h').then((l) => setEmEspera(l ?? [])); }, []);
@@ -242,7 +269,17 @@ export function App() {
           categoriasPadrao={todas.length - proprias.length} categoriasProprias={proprias.length}
           resumoDosParametros={resumoDosParametros(parametros.valores)} />
       )}
-      {rota === 'calendario' && calendario && <Calendario calendario={calendario} hoje={hoje()} />}
+      {rota === 'fechamento' && placar && (
+        <Fechamento placar={placar} temDados={recentes.some((l) => mesDe(l.data) === mesFechado)}
+          nomeDaCategoria={(id) => todas.find((c) => c.id === id)?.nome ?? 'Outros'}
+          assinaturasParecidas={(() => {
+            const parecidas = (saida?.recorrentes ?? []).filter((r) => r.duplicada);
+            return parecidas.length > 1 ? { quantidade: parecidas.length, custoAnual: parecidas.reduce((s, r) => s + r.custoAnual, 0) } : null;
+          })()}
+          diasDesdeOBackup={ultimoBackup ? Math.max(0, Math.round((Date.parse(hoje()) - Date.parse(ultimoBackup)) / 86400000)) : null}
+          aporteFeito={fechamentosComAporte.includes(placar.mes)} onVirarAporte={virarAporte} />
+      )}
+      {rota === 'calendario' && calendario &&<Calendario calendario={calendario} hoje={hoje()} />}
       {rota === 'parametros' &&<Parametros salvos={parametros} hoje={hoje()} onSalvar={salvarParametros} />}
       {rota === 'metas' && saida && (
         <Metas plano={saida.metas} metas={metas} renda={saida.diagnostico.renda} temDividas={saida.dividas !== null} dicas={saida.dicas}
@@ -289,7 +326,7 @@ export function App() {
           semPlano={onboarding === undefined} onMontarPlano={() => navegar('onboarding')}
           plano={saida?.plano ?? null} metas={metasNaHome} onMetas={() => navegar('metas')}
           previsao={saida?.previsao ?? null} onFatura={() => navegar('fatura')} avisos={saida?.avisos ?? []}
-          comprasParaLembrar={paraLembrar} onResolverCompra={resolverCompra} onPossoComprar={() => navegar('posso-comprar')} onCalendario={() => navegar('calendario')}
+          comprasParaLembrar={paraLembrar} onResolverCompra={resolverCompra} onPossoComprar={() => navegar('posso-comprar')} onCalendario={() => navegar('calendario')} onFecharMes={() => navegar('fechamento')}
           onLancar={() => setFolha({ tipo: 'novo' })} onEditar={(l) => setFolha({ tipo: 'editar', lancamento: l })} />
       )}
       {ehAba(rota) && <BarraDeBaixo ativa={rota} onLancar={() => setFolha({ tipo: 'novo' })} />}

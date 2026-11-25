@@ -36,6 +36,7 @@ interface Props {
   onResolverCompra: (id: string) => void;
   onPossoComprar: () => void;
   onCalendario: () => void;
+  onFecharMes: () => void;
 }
 
 export interface MetaNaHome {
@@ -89,7 +90,7 @@ function Atalho({ icone, rotulo, azul, onClick, aria }: { icone: NomeDoIcone; ro
   );
 }
 
-export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAlternarDiscreto, semPlano, onMontarPlano, plano, metas, onMetas, previsao, onFatura, avisos, comprasParaLembrar, onResolverCompra, onPossoComprar, onCalendario }: Props) {
+export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAlternarDiscreto, semPlano, onMontarPlano, plano, metas, onMetas, previsao, onFatura, avisos, comprasParaLembrar, onResolverCompra, onPossoComprar, onCalendario, onFecharMes }: Props) {
   const discreto = useModoDiscreto();
   const [trocas, setTrocas] = useState(0);
   const total = lancamentos.reduce((soma, l) => soma + l.valor, 0);
@@ -206,7 +207,7 @@ export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAlt
             <Atalho icone="sacola" azul aria="Posso comprar?" rotulo={<>Posso<br />comprar?</>} onClick={onPossoComprar} />
             <Atalho icone="calendario" aria="Calendário" rotulo="Calendário" onClick={onCalendario} />
             <Atalho icone="check" aria="Check-in" rotulo="Check-in" />
-            <Atalho icone="recibo" aria="Fechar mês" rotulo={<>Fechar<br />mês</>} />
+            <Atalho icone="recibo" aria="Fechar mês" rotulo={<>Fechar<br />mês</>} onClick={onFecharMes} />
           </div>
         </section>
       )}
