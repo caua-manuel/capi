@@ -7,7 +7,7 @@ import { diagnosticar, type Diagnostico } from './diagnostico';
 import type { Centavos } from './dinheiro';
 import { fixosDoMes, type OcorrenciaDeFixo } from './fixos';
 import type { Parametros } from './parametros';
-import { planejar, type Plano } from './plano';
+import { aplicarCortes, planejar, type AjustesDoPlano, type Plano } from './plano';
 import { planejarMetas, type PlanoDasMetas } from './metas';
 import type { Meta } from '../dominio/meta';
 import { analisarDividas, type AnaliseDasDividas } from './dividas';
@@ -40,6 +40,8 @@ export interface EntradaDoMotor {
   avisosMostrados?: readonly AvisoMostrado[];
   /** Dia em que o app foi aberto pela última vez antes de hoje, AAAA-MM-DD. */
   ultimaAbertura?: string;
+  /** O que o Usuário aplicou pelo simulador "E se…". */
+  ajustesDoPlano?: AjustesDoPlano;
   /** Compra simulada pelo "Posso comprar?". */
   compra?: { valor: Centavos; parcelas: number };
 }
@@ -79,10 +81,11 @@ export function calcular(e: EntradaDoMotor): SaidaDoMotor {
   const mesDoPlano: MesDoPlano = {
     mes, fixos: doMes, fixosNoCartao: doMes.filter((f) => f.forma === 'cartao'), totalDosFixos: doMes.reduce((s, f) => s + f.valor, 0),
   };
-  const plano = planejar({ hoje: e.hoje, diagnostico, fixosDoMes: doMes, categorias: e.categorias, lancamentos: e.lancamentos });
+  const planoBase = planejar({ hoje: e.hoje, diagnostico, fixosDoMes: doMes, categorias: e.categorias, lancamentos: e.lancamentos });
+  const plano = e.ajustesDoPlano ? { ...planoBase, tetos: aplicarCortes(planoBase.tetos, e.ajustesDoPlano.cortes) } : planoBase;
   const metasCom = (extra: Centavos) => planejarMetas({
     hoje: e.hoje, metas: e.metas ?? [], dividas: e.onboarding.dividas, diagnostico: { ...diagnostico, sobra: diagnostico.sobra + extra },
-    plano, categorias: e.categorias, rendimentoMensal: e.parametros.rendimentoMensalConservador, compra: e.compra,
+    plano: planoBase, categorias: e.categorias, rendimentoMensal: e.parametros.rendimentoMensalConservador, compra: e.compra,
     guardaPorMes: e.onboarding.guardaPorMes,
   });
   const metas = metasCom(0);

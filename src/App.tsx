@@ -20,6 +20,9 @@ import { Fixos } from './telas/Fixos';
 import type { Meta } from './dominio/meta';
 import { apagarMeta, listarMetas, salvarMeta } from './repositorio/metas';
 import { Metas } from './telas/Metas';
+import { EseSim } from './telas/EseSim';
+import { aplicarCenario } from './motor/simulador';
+import type { AjustesDoPlano } from './motor/plano';
 import { Dividas } from './telas/Dividas';
 import type { Fatura } from './dominio/fatura';
 import { listarFaturas } from './repositorio/faturas';
@@ -109,6 +112,8 @@ export function App() {
     setParametros(novos);
     void gravarParametros(novos);
   }
+  const [ajustesDoPlano, setAjustesDoPlano] = useState<AjustesDoPlano>({ cortes: {} });
+  useEffect(() => { void lerAjuste<AjustesDoPlano>('ajustes-do-plano').then((s) => s && setAjustesDoPlano(s)); }, []);
   const [avisosMostrados, setAvisosMostrados] = useState<AvisoMostrado[]>([]);
   // Última abertura antes de hoje, lida uma vez, para o Aviso "sumiu".
   const [ultimaAbertura, setUltimaAbertura] = useState<string | undefined>();
@@ -151,9 +156,9 @@ export function App() {
     if (!onboarding) return null;
     return {
       hoje: hoje(), onboarding, fixos,
-      categorias: todas, lancamentos: recentes, parametros: parametros.valores, metas, faturas, cartao, avisosMostrados, ultimaAbertura,
+      categorias: todas, lancamentos: recentes, parametros: parametros.valores, metas, faturas, cartao, avisosMostrados, ultimaAbertura, ajustesDoPlano,
     };
-  }, [onboarding, fixos, todas, recentes, metas, faturas, cartao, avisosMostrados, ultimaAbertura, parametros]);
+  }, [onboarding, fixos, todas, recentes, metas, faturas, cartao, avisosMostrados, ultimaAbertura, parametros, ajustesDoPlano]);
   const saida = useMemo(() => (entradaDoMotor ? calcular(entradaDoMotor) : null), [entradaDoMotor]);
 
   const calendario = useMemo(() => {
@@ -334,6 +339,16 @@ export function App() {
         <Metas plano={saida.metas} metas={metas} renda={saida.diagnostico.renda} temDividas={saida.dividas !== null} dicas={saida.dicas} investimento={saida.investimento}
           onSalvar={(m) => { setMetas((atuais) => [...atuais.filter((x) => x.id !== m.id), m]); void salvarMeta(m); }}
           onApagar={(id) => { setMetas((atuais) => atuais.filter((x) => x.id !== id)); void apagarMeta(id); }} />
+      )}
+      {rota === 'ese' && entradaDoMotor && (
+        <EseSim entrada={entradaDoMotor} metas={metas} categorias={todas} onAplicar={(cenario) => {
+          const { ajustes, metas: novas } = aplicarCenario(entradaDoMotor, cenario);
+          setAjustesDoPlano(ajustes);
+          void gravarAjuste('ajustes-do-plano', ajustes);
+          setMetas(novas);
+          for (const n of novas) if (n !== metas.find((m) => m.id === n.id)) void salvarMeta(n);
+          navegar('metas');
+        }} />
       )}
       {rota === 'dividas' && saida?.dividas && onboarding && <Dividas analise={saida.dividas} dividas={onboarding.dividas} />}
       {rota === 'dividas' && saida && !saida.dividas && (
