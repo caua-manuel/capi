@@ -1,5 +1,6 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { Categoria } from '../dominio/categorias';
+import type { Fixo } from '../dominio/fixo';
 import type { Lancamento } from '../dominio/lancamento';
 
 // O Repositório é a única parte do app que lê e grava dados (IndexedDB, ADR 0002).
@@ -24,10 +25,14 @@ export interface EsquemaCapi extends DBSchema {
     key: string;
     value: Categoria;
   };
+  fixos: {
+    key: string;
+    value: Fixo;
+  };
 }
 
 export const NOME_DO_BANCO = 'capi';
-export const VERSAO_DO_BANCO = 3;
+export const VERSAO_DO_BANCO = 4;
 
 let bancoAberto: Promise<IDBPDatabase<EsquemaCapi>> | null = null;
 
@@ -46,6 +51,9 @@ export function abrirBanco(): Promise<IDBPDatabase<EsquemaCapi>> {
       if (versaoAntiga < 3) {
         tx.objectStore('lancamentos').createIndex('por-categoria', 'categoriaId');
         db.createObjectStore('categorias', { keyPath: 'id' });
+      }
+      if (versaoAntiga < 4) {
+        db.createObjectStore('fixos', { keyPath: 'id' });
       }
     },
   });

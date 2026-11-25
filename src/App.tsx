@@ -11,7 +11,10 @@ import { apagarLancamento, listarLancamentosDesde, listarLancamentosDoMes, salva
 import type { RespostasDoOnboarding } from './dominio/onboarding';
 import { calcular } from './motor';
 import { somarMeses } from './motor/datas';
-import { fixosDoOnboarding } from './motor/fixos';
+import { sincronizarFixosDoOnboarding } from './motor/fixos';
+import type { Fixo } from './dominio/fixo';
+import { listarFixos, salvarFixo, salvarFixos } from './repositorio/fixos';
+import { Fixos } from './telas/Fixos';
 import { PARAMETROS_PADRAO } from './motor/parametros';
 import { gravarOnboarding, lerOnboarding } from './repositorio/onboarding';
 import { Diagnostico } from './telas/Diagnostico';
@@ -69,10 +72,11 @@ export function App() {
   // Nulo enquanto carrega; indefinido quando ainda não respondeu.
   const [onboarding, setOnboarding] = useState<RespostasDoOnboarding | undefined | null>(null);
   const [recentes, setRecentes] = useState<Lancamento[]>([]);
+  const [fixos, setFixos] = useState<Fixo[]>([]);
 
   const recarregar = useCallback(async () => {
-    const [lista, r, p, e, o, rec] = await Promise.all([
-      listarLancamentosDoMes(mes), lerRegras(), listarCategoriasProprias(), lerEscondidas(), lerOnboarding(), listarLancamentosDesde(somarMeses(mes, -3)),
+    const [lista, r, p, e, o, rec, fx] = await Promise.all([
+      listarLancamentosDoMes(mes), lerRegras(), listarCategoriasProprias(), lerEscondidas(), lerOnboarding(), listarLancamentosDesde(somarMeses(mes, -3)), listarFixos(),
     ]);
     setLancamentos(lista);
     setRegras(r);
@@ -80,6 +84,14 @@ export function App() {
     setEscondidas(e);
     setOnboarding(o);
     setRecentes(rec);
+    // Quem respondeu o Onboarding antes dos Fixos existirem ganha os Fixos dele cadastrados.
+    if (o && fx.length === 0) {
+      const criados = sincronizarFixosDoOnboarding([], o, mesDe(o.respondidoEm));
+      await salvarFixos(criados);
+      setFixos(criados);
+    } else {
+      setFixos(fx);
+    }
     // Primeira vez no app: começa pelo Onboarding.
     if (!o && lista.length === 0 && rotaAtual() === 'inicio') navegar('onboarding', true);
   }, [mes]);
@@ -87,13 +99,16 @@ export function App() {
   const saida = useMemo(() => {
     if (!onboarding) return null;
     return calcular({
-      hoje: hoje(), onboarding, fixos: fixosDoOnboarding(onboarding, mesDe(onboarding.respondidoEm)),
+      hoje: hoje(), onboarding, fixos,
       categorias: todas, lancamentos: recentes, parametros: PARAMETROS_PADRAO,
     });
-  }, [onboarding, todas, recentes]);
+  }, [onboarding, fixos, todas, recentes]);
 
   async function concluirOnboarding(respostas: RespostasDoOnboarding) {
     await gravarOnboarding(respostas);
+    const sincronizados = sincronizarFixosDoOnboarding(fixos, respostas, onboarding ? mes : mesDe(respostas.respondidoEm));
+    await salvarFixos(sincronizados);
+    setFixos(sincronizados);
     setOnboarding(respostas);
     navegar('diagnostico', true);
   }
@@ -142,6 +157,10 @@ export function App() {
   return (
     <ProvedorDiscreto ligado={discreto !== false}>
       {rota === 'ajustes' && <Ajustes />}
+      {rota === 'fixos' && (
+        <Fixos fixos={fixos} mes={mes} categorias={visiveis}
+          onSalvar={(f) => { setFixos((atuais) => [...atuais.filter((x) => x.id !== f.id), f]); void salvarFixo(f); }} />
+      )}
       {rota === 'onboarding' && onboarding !== null && (
         <Onboarding inicial={onboarding} categorias={visiveis} salarioMinimo={PARAMETROS_PADRAO.salarioMinimo}
           onConcluir={(r) => void concluirOnboarding(r)} onSair={() => navegar(onboarding ? 'ajustes' : 'inicio')} />
