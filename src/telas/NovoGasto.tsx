@@ -38,7 +38,6 @@ export function NovoGasto({ categorias, regras, editando, preenchimento, onSalva
   const [data, setData] = useState(editando?.data ?? hoje());
   const [salvando, setSalvando] = useState(false);
   const campo = useRef<HTMLInputElement>(null);
-  const chips = useRef<HTMLDivElement>(null);
   const origem: OrigemDoLancamento = editando?.origem ?? preenchimento?.origem ?? 'manual';
 
   const leitura = useMemo(() => lerLancamento(texto, categorias, regras), [texto, categorias, regras]);
@@ -51,14 +50,6 @@ export function NovoGasto({ categorias, regras, editando, preenchimento, onSalva
     window.addEventListener('keydown', fecharNoEsc);
     return () => window.removeEventListener('keydown', fecharNoEsc);
   }, [editando, preenchimento, onFechar]);
-
-  // A Categoria sugerida ou escolhida sempre fica à vista na rolagem dos chips.
-  useEffect(() => {
-    const chip = chips.current?.querySelector<HTMLElement>('[aria-pressed="true"]');
-    if (chip && chips.current) {
-      chips.current.scrollTo({ left: chip.offsetLeft - chips.current.clientWidth / 2 + chip.clientWidth / 2, behavior: 'smooth' });
-    }
-  }, [categoriaId]);
 
   async function salvar() {
     if (!pode || leitura.valor === null || categoriaId === null) return;
@@ -111,7 +102,7 @@ export function NovoGasto({ categorias, regras, editando, preenchimento, onSalva
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <span className="rotulo" style={{ padding: '0 4px', fontSize: 13 }}>Categoria</span>
-          <div className="chips" ref={chips}>
+          <div className="chips">
             {categorias.map((c) => (
               <button key={c.id} type="button" className="chip" aria-pressed={c.id === categoriaId}
                 onClick={() => setCategoriaEscolhida(c.id)}>{c.nome}</button>
