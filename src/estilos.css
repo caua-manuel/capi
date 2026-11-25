@@ -117,6 +117,34 @@ a { color: var(--bl); text-decoration: none; }
   font-size: 12px; line-height: 1.5; word-break: break-all;
 }
 
+/* Categorias */
+.lista-categorias { list-style: none; margin: 8px 0 0; padding: 0; }
+.lista-categorias li + li { border-top: 1px solid var(--ln); }
+.linha-categoria { min-height: 56px; padding: 8px 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.botao-icone {
+  width: 44px; height: 44px; border: none; border-radius: 22px; background: none; color: var(--tx2);
+  display: flex; align-items: center; justify-content: center;
+}
+.form-categoria { display: flex; flex-direction: column; gap: 10px; padding: 8px 0; }
+.chip:disabled { opacity: .45; }
+.segmentado { display: flex; padding: 3px; border-radius: 22px; background: var(--sf2); }
+.segmentado button {
+  flex: 1; min-height: 38px; border: none; border-radius: 19px; background: transparent;
+  font-size: 13px; font-weight: 500; color: var(--tx2);
+}
+.segmentado button[aria-checked="true"] { background: var(--sf); color: var(--tx); box-shadow: 0 1px 4px rgba(13, 23, 48, .12); }
+.interruptor {
+  appearance: none; -webkit-appearance: none; flex: none; position: relative; margin: 0;
+  width: 51px; height: 31px; border-radius: 16px; background: var(--ln); transition: background .2s;
+}
+.interruptor::after {
+  content: ''; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%;
+  background: #FFFFFF; box-shadow: 0 2px 4px rgba(0, 0, 0, .2); transition: transform .2s;
+}
+.interruptor:checked { background: #34C759; }
+.interruptor:checked::after { transform: translateX(20px); }
+.interruptor:disabled { opacity: .5; }
+
 /* Lista de Lançamentos */
 .lista ul { list-style: none; margin: 0; padding: 0; }
 .lista li + li { border-top: 1px solid var(--ln); }

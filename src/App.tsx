@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
-import { CATEGORIAS_PADRAO } from './dominio/categorias';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { criarCategoriaPropria, montarCategorias, type Categoria, type Grupo } from './dominio/categorias';
+import { apagarCategoriaPropria, gravarEscondidas, lerEscondidas, listarCategoriasProprias, salvarCategoriaPropria } from './repositorio/categorias';
+import { Categorias } from './telas/Categorias';
 import type { Lancamento } from './dominio/lancamento';
 import type { RegrasDeEstabelecimento } from './leitor/leitor';
 import { lerUrlDeEntrada } from './leitor/url';
@@ -30,7 +32,9 @@ export function App() {
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
   const [regras, setRegras] = useState<RegrasDeEstabelecimento>({});
   const [folha, setFolha] = useState<Folha>(folhaDaUrl);
-  const categorias = CATEGORIAS_PADRAO;
+  const [proprias, setProprias] = useState<Categoria[]>([]);
+  const [escondidas, setEscondidas] = useState<string[]>([]);
+  const { todas, visiveis } = useMemo(() => montarCategorias(proprias, escondidas), [proprias, escondidas]);
 
   useEffect(() => {
     // Depois de ler a URL de entrada, o endereço volta para a Início.
@@ -41,10 +45,35 @@ export function App() {
   }, []);
 
   const recarregar = useCallback(async () => {
-    const [lista, r] = await Promise.all([listarLancamentosDoMes(mes), lerRegras()]);
+    const [lista, r, p, e] = await Promise.all([listarLancamentosDoMes(mes), lerRegras(), listarCategoriasProprias(), lerEscondidas()]);
     setLancamentos(lista);
     setRegras(r);
+    setProprias(p);
+    setEscondidas(e);
   }, [mes]);
+
+  async function criarCategoria(nome: string, grupo: Grupo): Promise<string> {
+    const categoria = criarCategoriaPropria(`propria-${crypto.randomUUID()}`, nome, grupo);
+    await salvarCategoriaPropria(categoria);
+    setProprias((atuais) => [...atuais, categoria]);
+    return categoria.id;
+  }
+
+  async function renomearCategoria(categoria: Categoria, nome: string, grupo: Grupo) {
+    await salvarCategoriaPropria({ ...categoria, nome, grupo });
+    await recarregar();
+  }
+
+  async function apagarCategoria(categoria: Categoria) {
+    await apagarCategoriaPropria(categoria.id);
+    await recarregar();
+  }
+
+  async function alternarEscondida(id: string) {
+    const novas = escondidas.includes(id) ? escondidas.filter((e) => e !== id) : [...escondidas, id];
+    setEscondidas(novas);
+    await gravarEscondidas(novas);
+  }
 
   useEffect(() => { void recarregar(); }, [recarregar]);
 
@@ -68,12 +97,17 @@ export function App() {
     <>
       {rota === 'ajustes' && <Ajustes />}
       {rota === 'atalho' && <Atalho />}
-      {(rota === 'inicio' || rota === 'lancar' || rota === 'categorias') && (
-        <Inicio mes={mes} lancamentos={lancamentos} categorias={categorias} onAjustes={() => navegar('ajustes')}
+      {rota === 'categorias' && (
+        <Categorias todas={todas} escondidas={escondidas} onAlternarEscondida={alternarEscondida}
+          onCriar={(nome, grupo) => void criarCategoria(nome, grupo)} onRenomear={renomearCategoria} onApagar={apagarCategoria} />
+      )}
+      {(rota === 'inicio' || rota === 'lancar') && (
+        <Inicio mes={mes} lancamentos={lancamentos} categorias={todas} onAjustes={() => navegar('ajustes')}
           onLancar={() => setFolha({ tipo: 'novo' })} onEditar={(l) => setFolha({ tipo: 'editar', lancamento: l })} />
       )}
       {folha && (
-        <NovoGasto key={folha.tipo === 'editar' ? folha.lancamento.id : 'novo'} categorias={categorias} regras={regras}
+        <NovoGasto key={folha.tipo === 'editar' ? folha.lancamento.id : 'novo'} categorias={visiveis} regras={regras}
+          onCriarCategoria={criarCategoria}
           editando={folha.tipo === 'editar' ? folha.lancamento : undefined}
           preenchimento={folha.tipo === 'novo' ? folha.preenchimento : undefined}
           onSalvar={salvar} onApagar={apagar} onFechar={fechar} />

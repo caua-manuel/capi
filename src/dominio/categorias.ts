@@ -36,3 +36,21 @@ export const CATEGORIAS_PADRAO: readonly Categoria[] = [
   c('pix-pessoas', 'Pix para pessoas', 'estilo-de-vida', ['pix']),
   c('outros', 'Outros', 'estilo-de-vida', []),
 ];
+
+export const ID_OUTROS = 'outros';
+
+export function criarCategoriaPropria(id: string, nome: string, grupo: Grupo): Categoria {
+  return { id, nome: nome.replace(/\s+/g, ' ').trim(), grupo, palavrasChave: [], padrao: false };
+}
+
+/**
+ * `todas`: padrão + próprias, para nomear qualquer Lançamento (inclusive de Categoria escondida).
+ * `visiveis`: as que aparecem no lançamento. Outros nunca some.
+ */
+export function montarCategorias(proprias: readonly Categoria[], escondidas: readonly string[]) {
+  const semOutros = CATEGORIAS_PADRAO.filter((cat) => cat.id !== ID_OUTROS);
+  const outros = CATEGORIAS_PADRAO.filter((cat) => cat.id === ID_OUTROS);
+  const todas: Categoria[] = [...semOutros, ...proprias, ...outros];
+  const visiveis = todas.filter((cat) => cat.id === ID_OUTROS || !escondidas.includes(cat.id));
+  return { todas, visiveis };
+}

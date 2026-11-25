@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Categoria } from '../dominio/categorias';
+import type { Categoria, Grupo } from '../dominio/categorias';
+import { FormNovaCategoria } from '../componentes/FormNovaCategoria';
+import { normalizar } from '../leitor/normalizar';
 import type { Lancamento, OrigemDoLancamento } from '../dominio/lancamento';
 import { lerLancamento, type RegrasDeEstabelecimento } from '../leitor/leitor';
 import { Icone } from '../componentes/Icone';
@@ -20,9 +22,12 @@ interface Props {
   onSalvar: (lancamento: Lancamento) => Promise<void>;
   onApagar?: (id: string) => Promise<void>;
   onFechar: () => void;
+  /** Cria a Categoria ali mesmo, sem sair do lançamento, e devolve o id dela. */
+  onCriarCategoria: (nome: string, grupo: Grupo) => Promise<string>;
 }
 
-export function NovoGasto({ categorias, regras, editando, preenchimento, onSalvar, onApagar, onFechar }: Props) {
+export function NovoGasto({ categorias, regras, editando, preenchimento, onSalvar, onApagar, onFechar, onCriarCategoria }: Props) {
+  const [criandoCategoria, setCriandoCategoria] = useState(false);
   const [texto, setTexto] = useState(
     editando ? `${editando.loja} ${centavosParaTexto(editando.valor)}` : (preenchimento?.texto ?? ''),
   );
@@ -106,7 +111,18 @@ export function NovoGasto({ categorias, regras, editando, preenchimento, onSalva
               <button key={c.id} type="button" className="chip" aria-pressed={c.id === categoriaId}
                 onClick={() => setCategoriaEscolhida(c.id)}>{c.nome}</button>
             ))}
+            <button type="button" className="chip chip-novo" onClick={() => setCriandoCategoria(true)}>+ Nova categoria</button>
           </div>
+          {criandoCategoria && (
+            <FormNovaCategoria rotuloDoBotao="Criar e usar"
+              nomeJaExiste={(nome) => categorias.some((c) => normalizar(c.nome) === normalizar(nome))}
+              onCancelar={() => setCriandoCategoria(false)}
+              onConfirmar={async (nome, grupo) => {
+                const id = await onCriarCategoria(nome, grupo);
+                setCategoriaEscolhida(id);
+                setCriandoCategoria(false);
+              }} />
+          )}
         </div>
 
         <label className="linha-data">
