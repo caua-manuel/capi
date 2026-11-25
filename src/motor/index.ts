@@ -10,6 +10,7 @@ import type { Parametros } from './parametros';
 import { planejar, type Plano } from './plano';
 import { planejarMetas, type PlanoDasMetas } from './metas';
 import type { Meta } from '../dominio/meta';
+import { analisarDividas, type AnaliseDasDividas } from './dividas';
 
 /** Tudo o que o Motor precisa. As Telas leem do Repositório e passam aqui. */
 export interface EntradaDoMotor {
@@ -41,6 +42,8 @@ export interface SaidaDoMotor {
   mesDoPlano: MesDoPlano;
   plano: Plano;
   metas: PlanoDasMetas;
+  /** Nulo quando não há Dívidas. */
+  dividas: AnaliseDasDividas | null;
 }
 
 /** A função de entrada do Motor: puro, sem tela e sem ler nem gravar dados. */
@@ -58,5 +61,6 @@ export function calcular(e: EntradaDoMotor): SaidaDoMotor {
     hoje: e.hoje, metas: e.metas ?? [], dividas: e.onboarding.dividas, diagnostico, plano, categorias: e.categorias,
     rendimentoMensal: e.parametros.rendimentoMensalConservador,
   });
-  return { diagnostico, mesDoPlano, plano, metas };
+  const dividas = analisarDividas(e.onboarding.dividas, diagnostico.sobra, diagnostico.renda);
+  return { diagnostico, mesDoPlano, plano, metas, dividas };
 }
