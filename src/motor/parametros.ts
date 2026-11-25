@@ -20,6 +20,8 @@ export interface Parametros {
   salarioMinimo: Centavos;
   /** Rendimento mensal líquido conservador para as Metas (renda fixa pós-fixada, já sem IR). */
   rendimentoMensalConservador: number;
+  /** Rendimento mensal da poupança, para a dica de dinheiro parado. */
+  poupancaMensal: number;
 }
 
 export const PARAMETROS_PADRAO: Parametros = {
@@ -30,4 +32,5 @@ export const PARAMETROS_PADRAO: Parametros = {
   irRendaFixa: { ate180Dias: 0.225, ate360Dias: 0.2, ate720Dias: 0.175, acima720Dias: 0.15 },
   salarioMinimo: 162100,
   rendimentoMensalConservador: 0.008,
+  poupancaMensal: 0.005,
 };

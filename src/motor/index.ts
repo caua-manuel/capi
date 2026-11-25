@@ -14,6 +14,8 @@ import { analisarDividas, type AnaliseDasDividas } from './dividas';
 import { detectarRecorrentes, type Recorrente } from './recorrentes';
 import type { Fatura } from '../dominio/fatura';
 import { preverFatura, type Cartao, type PrevisaoDeFatura } from './previsao';
+import { escolherAvisos, type Aviso, type AvisoMostrado } from './avisos';
+import { gerarDicas, type Dica } from './dicas';
 
 /** Tudo o que o Motor precisa. As Telas leem do Repositório e passam aqui. */
 export interface EntradaDoMotor {
@@ -32,6 +34,10 @@ export interface EntradaDoMotor {
   faturas?: readonly Fatura[];
   /** Dia de fechamento e de vencimento do cartão; sem ele não há Previsão de fatura. */
   cartao?: Cartao;
+  /** Avisos já mostrados, para o limite de 3 por semana. */
+  avisosMostrados?: readonly AvisoMostrado[];
+  /** Dia em que o app foi aberto pela última vez antes de hoje, AAAA-MM-DD. */
+  ultimaAbertura?: string;
 }
 
 export interface MesDoPlano {
@@ -53,6 +59,8 @@ export interface SaidaDoMotor {
   dividas: AnaliseDasDividas | null;
   recorrentes: Recorrente[];
   previsao: PrevisaoDeFatura | null;
+  avisos: Aviso[];
+  dicas: Dica[];
 }
 
 /** A função de entrada do Motor: puro, sem tela e sem ler nem gravar dados. */
@@ -66,15 +74,23 @@ export function calcular(e: EntradaDoMotor): SaidaDoMotor {
     mes, fixos: doMes, fixosNoCartao: doMes.filter((f) => f.forma === 'cartao'), totalDosFixos: doMes.reduce((s, f) => s + f.valor, 0),
   };
   const plano = planejar({ hoje: e.hoje, diagnostico, fixosDoMes: doMes, categorias: e.categorias, lancamentos: e.lancamentos });
-  const metas = planejarMetas({
-    hoje: e.hoje, metas: e.metas ?? [], dividas: e.onboarding.dividas, diagnostico, plano, categorias: e.categorias,
-    rendimentoMensal: e.parametros.rendimentoMensalConservador,
+  const metasCom = (extra: Centavos) => planejarMetas({
+    hoje: e.hoje, metas: e.metas ?? [], dividas: e.onboarding.dividas, diagnostico: { ...diagnostico, sobra: diagnostico.sobra + extra },
+    plano, categorias: e.categorias, rendimentoMensal: e.parametros.rendimentoMensalConservador,
   });
+  const metas = metasCom(0);
   const dividas = analisarDividas(e.onboarding.dividas, diagnostico.sobra, diagnostico.renda);
   const recorrentes = detectarRecorrentes(e.faturas ?? [], e.parametros.iofInternacional);
   const previsao = e.cartao ? preverFatura({
     hoje: e.hoje, cartao: e.cartao, lancamentos: e.lancamentos, faturas: e.faturas ?? [], fixos: e.fixos, recorrentes,
     iofInternacional: e.parametros.iofInternacional,
   }) : null;
-  return { diagnostico, mesDoPlano, plano, metas, dividas, recorrentes, previsao };
+  const avisos = escolherAvisos({
+    hoje: e.hoje, onboarding: e.onboarding, plano, metas, recorrentes, avisosMostrados: e.avisosMostrados ?? [], ultimaAbertura: e.ultimaAbertura,
+  });
+  const dicas = gerarDicas({
+    hoje: e.hoje, onboarding: e.onboarding, diagnostico, plano, metas, recorrentes, lancamentos: e.lancamentos, faturas: e.faturas ?? [],
+    parametros: e.parametros, metasComExtra: metasCom,
+  });
+  return { diagnostico, mesDoPlano, plano, metas, dividas, recorrentes, previsao, avisos, dicas };
 }
