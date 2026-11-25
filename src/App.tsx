@@ -7,7 +7,8 @@ import { gravarAjuste, lerAjuste } from './repositorio/ajustes';
 import type { Lancamento } from './dominio/lancamento';
 import type { RegrasDeEstabelecimento } from './leitor/leitor';
 import { lerUrlDeEntrada } from './leitor/url';
-import { apagarLancamento, listarLancamentosDesde, listarLancamentosDoMes, salvarLancamento } from './repositorio/lancamentos';
+import { apagarComSeguintes, listarLancamentosDesde, listarLancamentosDoMes, restaurarLancamentos, salvarLancamento } from './repositorio/lancamentos';
+import { AvisoDeDesfazer } from './componentes/AvisoDeDesfazer';
 import type { RespostasDoOnboarding } from './dominio/onboarding';
 import { calcular, type EntradaDoMotor } from './motor';
 import { comprasParaLembrar, type Compra, type CompraEmEspera } from './motor/compra';
@@ -320,17 +321,21 @@ export function App() {
     await recarregar();
   }
 
+  // Desfazer: guarda o que acabou de apagar por 5 segundos.
+  const [apagados, setApagados] = useState<{ lista: Lancamento[]; chave: number } | null>(null);
   async function apagar(id: string) {
-    await apagarLancamento(id);
-    // Compra parcelada: apagar uma Parcela leva as seguintes junto.
-    const apagado = [...lancamentos, ...recentes].find((l) => l.id === id);
-    if (apagado?.compraId) {
-      const seguintes = (await listarLancamentosDesde(mesDe(apagado.data))).filter((l) => l.compraId === apagado.compraId && l.data > apagado.data);
-      for (const l of seguintes) await apagarLancamento(l.id);
-    }
+    const lista = await apagarComSeguintes(id);
+    if (lista.length > 0) setApagados((atual) => ({ lista, chave: (atual?.chave ?? 0) + 1 }));
     setFolha(null);
     await recarregar();
   }
+  async function desfazerApagar() {
+    if (!apagados) return;
+    await restaurarLancamentos(apagados.lista);
+    setApagados(null);
+    await recarregar();
+  }
+  const expirarDesfazer = useCallback(() => setApagados(null), []);
 
   const fechar = useCallback(() => setFolha(null), []);
 
@@ -443,6 +448,7 @@ export function App() {
           onLancar={() => setFolha({ tipo: 'novo' })} onEditar={(l) => setFolha({ tipo: 'editar', lancamento: l })} />
       )}
       {ehAba(rota) && <BarraDeBaixo ativa={rota} onLancar={() => setFolha({ tipo: 'novo' })} />}
+      {apagados && !folha && <AvisoDeDesfazer chave={apagados.chave} onDesfazer={() => void desfazerApagar()} onExpirar={expirarDesfazer} />}
       {folha && (
         <NovoGasto plano={saida?.plano ?? null} key={folha.tipo === 'editar' ? folha.lancamento.id : 'novo'} categorias={visiveis} regras={regras}
           onCriarCategoria={criarCategoria}
