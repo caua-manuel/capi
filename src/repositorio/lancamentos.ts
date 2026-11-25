@@ -11,6 +11,12 @@ export async function apagarLancamento(id: string): Promise<void> {
   await db.delete('lancamentos', id);
 }
 
+/** Lançamentos a partir de um mês (AAAA-MM), pela data da compra, para o Motor. */
+export async function listarLancamentosDesde(mes: string): Promise<Lancamento[]> {
+  const db = await abrirBanco();
+  return db.getAllFromIndex('lancamentos', 'por-data', IDBKeyRange.lowerBound(`${mes}-01`));
+}
+
 /** Lançamentos de um mês (AAAA-MM), pela data da compra, do mais novo para o mais antigo. */
 export async function listarLancamentosDoMes(mes: string): Promise<Lancamento[]> {
   const db = await abrirBanco();

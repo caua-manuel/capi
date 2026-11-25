@@ -45,3 +45,10 @@ export function saudacao(): string {
   if (hora < 18) return 'Boa tarde';
   return 'Boa noite';
 }
+
+const reaisInteiros = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+
+/** R$ sem centavos, para resumos: 238000 → "R$ 2.380". */
+export function formatarReaisInteiros(valor: Centavos): string {
+  return reaisInteiros.format(Math.round(valor / 100)).replace(/ /g, ' ');
+}

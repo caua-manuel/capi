@@ -7,7 +7,15 @@ import { gravarAjuste, lerAjuste } from './repositorio/ajustes';
 import type { Lancamento } from './dominio/lancamento';
 import type { RegrasDeEstabelecimento } from './leitor/leitor';
 import { lerUrlDeEntrada } from './leitor/url';
-import { apagarLancamento, listarLancamentosDoMes, salvarLancamento } from './repositorio/lancamentos';
+import { apagarLancamento, listarLancamentosDesde, listarLancamentosDoMes, salvarLancamento } from './repositorio/lancamentos';
+import type { RespostasDoOnboarding } from './dominio/onboarding';
+import { calcular } from './motor';
+import { somarMeses } from './motor/datas';
+import { fixosDoOnboarding } from './motor/fixos';
+import { PARAMETROS_PADRAO } from './motor/parametros';
+import { gravarOnboarding, lerOnboarding } from './repositorio/onboarding';
+import { Diagnostico } from './telas/Diagnostico';
+import { Onboarding } from './telas/Onboarding';
 import { gravarRegra, lerRegras } from './repositorio/regras';
 import { Ajustes } from './telas/Ajustes';
 import { Atalho } from './telas/Atalho';
@@ -58,13 +66,37 @@ export function App() {
     return () => window.removeEventListener('popstate', aoNavegar);
   }, []);
 
+  // Nulo enquanto carrega; indefinido quando ainda não respondeu.
+  const [onboarding, setOnboarding] = useState<RespostasDoOnboarding | undefined | null>(null);
+  const [recentes, setRecentes] = useState<Lancamento[]>([]);
+
   const recarregar = useCallback(async () => {
-    const [lista, r, p, e] = await Promise.all([listarLancamentosDoMes(mes), lerRegras(), listarCategoriasProprias(), lerEscondidas()]);
+    const [lista, r, p, e, o, rec] = await Promise.all([
+      listarLancamentosDoMes(mes), lerRegras(), listarCategoriasProprias(), lerEscondidas(), lerOnboarding(), listarLancamentosDesde(somarMeses(mes, -3)),
+    ]);
     setLancamentos(lista);
     setRegras(r);
     setProprias(p);
     setEscondidas(e);
+    setOnboarding(o);
+    setRecentes(rec);
+    // Primeira vez no app: começa pelo Onboarding.
+    if (!o && lista.length === 0 && rotaAtual() === 'inicio') navegar('onboarding', true);
   }, [mes]);
+
+  const saida = useMemo(() => {
+    if (!onboarding) return null;
+    return calcular({
+      hoje: hoje(), onboarding, fixos: fixosDoOnboarding(onboarding, mesDe(onboarding.respondidoEm)),
+      categorias: todas, lancamentos: recentes, parametros: PARAMETROS_PADRAO,
+    });
+  }, [onboarding, todas, recentes]);
+
+  async function concluirOnboarding(respostas: RespostasDoOnboarding) {
+    await gravarOnboarding(respostas);
+    setOnboarding(respostas);
+    navegar('diagnostico', true);
+  }
 
   async function criarCategoria(nome: string, grupo: Grupo): Promise<string> {
     const categoria = criarCategoriaPropria(`propria-${crypto.randomUUID()}`, nome, grupo);
@@ -110,6 +142,17 @@ export function App() {
   return (
     <ProvedorDiscreto ligado={discreto !== false}>
       {rota === 'ajustes' && <Ajustes />}
+      {rota === 'onboarding' && onboarding !== null && (
+        <Onboarding inicial={onboarding} categorias={visiveis} salarioMinimo={PARAMETROS_PADRAO.salarioMinimo}
+          onConcluir={(r) => void concluirOnboarding(r)} onSair={() => navegar(onboarding ? 'ajustes' : 'inicio')} />
+      )}
+      {rota === 'diagnostico' && saida && (
+        <Diagnostico diagnostico={saida.diagnostico} onVoltar={() => navegar('inicio')} onContinuar={() => navegar('inicio')} />
+      )}
+      {rota === 'diagnostico' && onboarding === undefined && (
+        <Onboarding categorias={visiveis} salarioMinimo={PARAMETROS_PADRAO.salarioMinimo}
+          onConcluir={(r) => void concluirOnboarding(r)} onSair={() => navegar('inicio')} />
+      )}
       {rota === 'atalho' && <Atalho />}
       {rota === 'categorias' && (
         <Categorias todas={todas} escondidas={escondidas} onAlternarEscondida={alternarEscondida}
@@ -117,6 +160,7 @@ export function App() {
       )}
       {(rota === 'inicio' || rota === 'lancar') && (
         <Inicio mes={mes} lancamentos={lancamentos} categorias={todas} onAjustes={() => navegar('ajustes')} onAlternarDiscreto={alternarDiscreto}
+          semPlano={onboarding === undefined} onMontarPlano={() => navegar('onboarding')}
           onLancar={() => setFolha({ tipo: 'novo' })} onEditar={(l) => setFolha({ tipo: 'editar', lancamento: l })} />
       )}
       {folha && (
