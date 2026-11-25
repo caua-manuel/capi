@@ -189,10 +189,10 @@ export function App() {
   const calendario = useMemo(() => {
     if (!onboarding || !saida) return null;
     return montarCalendario({
-      hoje: hoje(), fixos, recorrentes: saida.recorrentes, faturas, cartao, anuais: onboarding.anuais, respondidoEm: onboarding.respondidoEm,
+      hoje: hoje(), fixos, recorrentes: saida.recorrentes, lancamentos: recentes, faturas, cartao, anuais: onboarding.anuais, respondidoEm: onboarding.respondidoEm,
       salario: onboarding.diaDoSalario ? { dia: onboarding.diaDoSalario, valor: onboarding.renda.valor } : undefined,
     });
-  }, [onboarding, saida, fixos, faturas, cartao]);
+  }, [onboarding, saida, fixos, faturas, cartao, recentes]);
 
   // Capi do dia: o Motor escolhe e a escolha fica fixa até o dia seguinte (no máximo uma mudança por dia).
   const [capiSalva, setCapiSalva] = useState<{ data: string; capi: CapiDoDia } | null | undefined>(undefined);
@@ -311,8 +311,9 @@ export function App() {
 
   useEffect(() => { void recarregar(); }, [recarregar]);
 
-  async function salvar(lancamento: Lancamento) {
+  async function salvar(lancamento: Lancamento, demais: Lancamento[] = []) {
     await salvarLancamento(lancamento);
+    for (const parcela of demais) await salvarLancamento(parcela);
     // A Categoria escolhida para a Loja vira Regra de estabelecimento.
     await gravarRegra(lancamento.loja, lancamento.categoriaId);
     setFolha(null);
@@ -321,6 +322,12 @@ export function App() {
 
   async function apagar(id: string) {
     await apagarLancamento(id);
+    // Compra parcelada: apagar uma Parcela leva as seguintes junto.
+    const apagado = [...lancamentos, ...recentes].find((l) => l.id === id);
+    if (apagado?.compraId) {
+      const seguintes = (await listarLancamentosDesde(mesDe(apagado.data))).filter((l) => l.compraId === apagado.compraId && l.data > apagado.data);
+      for (const l of seguintes) await apagarLancamento(l.id);
+    }
     setFolha(null);
     await recarregar();
   }

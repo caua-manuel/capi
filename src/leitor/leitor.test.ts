@@ -67,3 +67,43 @@ describe('Categorias padrão', () => {
     }
   });
 });
+
+describe('Leitor de compra parcelada', () => {
+  it('entende "notebook 3000 10x" como R$ 3.000 em 10 Parcelas', () => {
+    expect(ler('notebook 3000 10x')).toEqual({ valor: 300000, loja: 'Notebook', categoriaId: null, parcelas: 10 });
+  });
+
+  it('entende "tênis 480 em 3x"', () => {
+    expect(ler('tênis 480 em 3x')).toMatchObject({ valor: 48000, loja: 'Tênis', parcelas: 3 });
+  });
+
+  it('entende "3 vezes" e "10 x" separado', () => {
+    expect(ler('sofá 1200 em 3 vezes')).toMatchObject({ valor: 120000, loja: 'Sofá', parcelas: 3 });
+    expect(ler('geladeira 2400 12 x')).toMatchObject({ valor: 240000, loja: 'Geladeira', parcelas: 12 });
+  });
+
+  it('entende as Parcelas antes do valor: "10x notebook 3000"', () => {
+    expect(ler('10x notebook 3000')).toMatchObject({ valor: 300000, loja: 'Notebook', parcelas: 10 });
+  });
+
+  it('"3x de 160" fala do valor da Parcela: o total é 3 vezes 160', () => {
+    expect(ler('tênis 3x de 160')).toMatchObject({ valor: 48000, loja: 'Tênis', parcelas: 3 });
+  });
+
+  it('aceita centavos e milhar no valor parcelado', () => {
+    expect(ler('notebook 3.499,90 em 10x')).toMatchObject({ valor: 349990, parcelas: 10 });
+  });
+
+  it('sem "x" não é parcelado, e não confunde número no nome da Loja', () => {
+    expect(ler('99 food 30').parcelas).toBeUndefined();
+    expect(ler('ifood 42').parcelas).toBeUndefined();
+  });
+
+  it('"1x" é à vista e não vira Parcela', () => {
+    expect(ler('tênis 480 1x')).toEqual({ valor: 48000, loja: 'Tênis', categoriaId: null });
+  });
+
+  it('mantém a Categoria sugerida pela Loja', () => {
+    expect(ler('farmácia 300 em 3x')).toMatchObject({ categoriaId: 'saude', parcelas: 3 });
+  });
+});

@@ -1,6 +1,8 @@
 import type { AnualDeclarado } from '../dominio/onboarding';
 import type { Fatura } from '../dominio/fatura';
 import type { Fixo } from '../dominio/fixo';
+import type { Lancamento } from '../dominio/lancamento';
+import { nomesParecidos } from '../conciliacao/conciliacao';
 import { dataNoMes, diferencaEmDias, diferencaEmMeses, mesDaData, mesesCompletosEntre, somarMeses } from './datas';
 import type { Centavos } from './dinheiro';
 import { fixosDoMes } from './fixos';
@@ -40,6 +42,8 @@ export interface EntradaDoCalendario {
   hoje: string;
   fixos: readonly Fixo[];
   recorrentes: readonly Recorrente[];
+  /** Lançamentos, para as Parcelas de compras parceladas digitadas à mão. */
+  lancamentos?: readonly Lancamento[];
   faturas: readonly Fatura[];
   cartao?: Cartao;
   anuais: readonly AnualDeclarado[];
@@ -66,6 +70,10 @@ export function montarCalendario(e: EntradaDoCalendario): Calendario {
     const fixos = fixosDoMes(e.fixos, mes);
     for (const f of fixos) compromissos.push({ data: f.data, tipo: 'fixo', nome: f.nome, valor: f.valor });
 
+    // Parcelas lançadas à mão (as da Importação já vêm pela última Fatura, logo abaixo).
+    const manuais = (e.lancamentos ?? []).filter((l) => l.parcela && l.origem !== 'importacao' && mesDaData(l.data) === mes);
+    for (const l of manuais) compromissos.push({ data: l.data, tipo: 'parcela', nome: l.loja, valor: l.valor, parcela: l.parcela });
+
     if (ultimaFatura) {
       const passos = diferencaEmMeses(mesDaData(ultimaFatura.fechamento), mes);
       const diaDoVencimento = e.cartao?.diaDeVencimento ?? Number(ultimaFatura.vencimento.slice(8, 10));
@@ -73,6 +81,8 @@ export function montarCalendario(e: EntradaDoCalendario): Calendario {
         if (linha.tipo !== 'compra' || !linha.parcela) continue;
         const atual = linha.parcela.atual + passos;
         if (passos < 1 || atual > linha.parcela.total) continue;
+        const total = linha.parcela.total;
+        if (manuais.some((l) => l.parcela?.atual === atual && l.parcela.total === total && nomesParecidos(l.loja, linha.loja))) continue;
         compromissos.push({ data: dataNoMes(mes, diaDoVencimento), tipo: 'parcela', nome: linha.loja, valor: linha.valor, parcela: { atual, total: linha.parcela.total } });
       }
     }

@@ -8,6 +8,7 @@ import { Icone } from '../componentes/Icone';
 import { Valor, useModoDiscreto } from './discreto';
 import { centavosParaTexto, hoje, mesDe, rotuloDaData } from './formato';
 import { tetoDepoisDoGasto, type Plano } from '../motor/plano';
+import { gerarParcelas } from '../motor/parcelas';
 
 export interface PreenchimentoDoGasto {
   texto: string;
@@ -23,7 +24,8 @@ interface Props {
   /** Lançamento em edição; sem ele, é um Novo gasto. */
   editando?: Lancamento;
   preenchimento?: PreenchimentoDoGasto;
-  onSalvar: (lancamento: Lancamento) => Promise<void>;
+  /** `demais` são as Parcelas 2 em diante, quando a compra é parcelada. */
+  onSalvar: (lancamento: Lancamento, demais?: Lancamento[]) => Promise<void>;
   onApagar?: (id: string) => Promise<void>;
   onFechar: () => void;
   /** Cria a Categoria ali mesmo, sem sair do lançamento, e devolve o id dela. */
@@ -45,6 +47,8 @@ export function NovoGasto({ plano, categorias, regras, editando, preenchimento, 
 
   const leitura = useMemo(() => lerLancamento(texto, categorias, regras), [texto, categorias, regras]);
   const categoriaId = categoriaEscolhida ?? leitura.categoriaId;
+  // Parcelar só vale para gasto novo: editar mexe numa Parcela só.
+  const parcelas = !editando && leitura.parcelas ? leitura.parcelas : 1;
   const pode = leitura.valor !== null && leitura.valor > 0 && categoriaId !== null && !salvando;
 
   const teto = useMemo(() => {
@@ -63,7 +67,7 @@ export function NovoGasto({ plano, categorias, regras, editando, preenchimento, 
   async function salvar() {
     if (!pode || leitura.valor === null || categoriaId === null) return;
     setSalvando(true);
-    await onSalvar({
+    const base: Lancamento = {
       id: editando?.id ?? crypto.randomUUID(),
       valor: leitura.valor,
       loja: leitura.loja || 'Sem nome',
@@ -71,7 +75,9 @@ export function NovoGasto({ plano, categorias, regras, editando, preenchimento, 
       data,
       origem,
       criadoEm: editando?.criadoEm ?? new Date().toISOString(),
-    });
+    };
+    const [primeira, ...demais] = gerarParcelas(base, parcelas, () => crypto.randomUUID());
+    await onSalvar(primeira!, demais);
   }
 
   return (
@@ -94,6 +100,11 @@ export function NovoGasto({ plano, categorias, regras, editando, preenchimento, 
           <div className="num valor-grande" aria-live="polite">
             <Valor centavos={leitura.valor ?? 0} />
           </div>
+          {parcelas > 1 && leitura.valor && (
+            <div className="selo-parcelas" aria-live="polite">
+              {parcelas}x de <Valor centavos={Math.floor(leitura.valor / parcelas)} />
+            </div>
+          )}
           <div className="texto-2" style={{ marginTop: 8 }}>
             {leitura.loja || 'Escreva a loja e o valor'} · {rotuloDaData(data)}
           </div>
