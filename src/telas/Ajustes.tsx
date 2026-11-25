@@ -9,6 +9,7 @@ interface Props {
   categoriasPadrao: number;
   categoriasProprias: number;
   resumoDosParametros: string;
+  resumoDoBackup: string;
 }
 
 interface Item {
@@ -45,7 +46,7 @@ function Grupo({ titulo, children }: { titulo: string; children: ReactNode }) {
   );
 }
 
-export function Ajustes({ discreto, onAlternarDiscreto, quantidadeDeFixos, categoriasPadrao, categoriasProprias, resumoDosParametros }: Props) {
+export function Ajustes({ discreto, onAlternarDiscreto, quantidadeDeFixos, categoriasPadrao, categoriasProprias, resumoDosParametros, resumoDoBackup }: Props) {
   const itensDoPlano: Item[] = [
     { rota: 'onboarding', icone: 'lapis', titulo: 'Suas respostas', descricao: 'Renda, moradia, fixos, dívidas e objetivos' },
     { rota: 'fixos', icone: 'calendario', titulo: 'Fixos', descricao: quantidadeDeFixos === 0 ? 'Nenhum cadastrado ainda' : quantidadeDeFixos === 1 ? '1 item, entra sozinho todo mês' : `${quantidadeDeFixos} itens, entram sozinhos todo mês` },
@@ -82,6 +83,10 @@ export function Ajustes({ discreto, onAlternarDiscreto, quantidadeDeFixos, categ
         {itensDoPlano.map((item) => (
           <Linha key={item.rota} icone={item.icone} titulo={item.titulo} descricao={item.descricao} fim={seta} onClick={() => navegar(item.rota)} />
         ))}
+      </Grupo>
+
+      <Grupo titulo="Backup">
+        <Linha icone="baixar" titulo="Exportar e restaurar" descricao={`${resumoDoBackup} · senha opcional`} fim={seta} onClick={() => navegar('backup')} />
       </Grupo>
 
       <p className="rotulo" style={{ margin: '16px 28px 0', textAlign: 'center', color: 'var(--tx3)' }}>

@@ -18,6 +18,7 @@ const caminhos = {
   grafico: <path d="M4 19V5M4 19h16M8 15l4-4 3 3 5-6" />,
   escudo: <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" />,
   percentual: <><path d="M19 5 5 19" /><circle cx="7" cy="7" r="2.5" /><circle cx="17" cy="17" r="2.5" /></>,
+  baixar: <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />,
   repetir: <path d="M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3" />,
   voltar: <path d="M15 18l-6-6 6-6" />,
   lapis: <path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4" />,

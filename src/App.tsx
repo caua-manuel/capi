@@ -40,6 +40,8 @@ import { fazerCheckin } from './motor/checkin';
 import { CheckIn } from './telas/CheckIn';
 import { DiaDoPagamento } from './telas/DiaDoPagamento';
 import { Lembretes } from './telas/Lembretes';
+import { Backup } from './telas/Backup';
+import { registrarBackupFeito } from './repositorio/backup';
 import { gravarOnboarding, lerOnboarding } from './repositorio/onboarding';
 import { Diagnostico } from './telas/Diagnostico';
 import { Onboarding } from './telas/Onboarding';
@@ -279,7 +281,8 @@ export function App() {
       {rota === 'ajustes' && (
         <Ajustes discreto={discreto === true} onAlternarDiscreto={alternarDiscreto} quantidadeDeFixos={fixos.length}
           categoriasPadrao={todas.length - proprias.length} categoriasProprias={proprias.length}
-          resumoDosParametros={resumoDosParametros(parametros.valores)} />
+          resumoDosParametros={resumoDosParametros(parametros.valores)}
+          resumoDoBackup={ultimoBackup ? `Último há ${Math.max(0, Math.round((Date.parse(hoje()) - Date.parse(ultimoBackup)) / 86400000))} dias` : 'Você ainda não exportou'} />
       )}
       {rota === 'fechamento' && placar && (
         <Fechamento placar={placar} temDados={recentes.some((l) => mesDe(l.data) === mesFechado)}
@@ -302,6 +305,9 @@ export function App() {
           jaSeparou={pagamentosSeparados.includes(mes)} onSeparei={separeiOPagamento} />
       )}
       {rota === 'lembretes' && <Lembretes />}
+      {rota === 'backup' && (
+        <Backup hoje={hoje()} ultimoBackup={ultimoBackup} onExportou={() => { void registrarBackupFeito(hoje()); setUltimoBackup(hoje()); }} />
+      )}
       {rota === 'calendario' && calendario && <Calendario calendario={calendario} hoje={hoje()} />}
       {rota === 'parametros' &&<Parametros salvos={parametros} hoje={hoje()} onSalvar={salvarParametros} />}
       {rota === 'metas' && saida && (
