@@ -427,3 +427,9 @@ a { color: var(--bl); text-decoration: none; }
 .linha-teto.estourado { background: var(--badsf); color: var(--bad); }
 .botao-sino { position: relative; }
 .botao-sino .marcador { position: absolute; top: 9px; right: 10px; width: 10px; height: 10px; border-radius: 5px; background: var(--bad); box-shadow: 0 0 0 2px var(--sf); }
+
+/* Instale a Capi primeiro */
+.instalar { text-align: center; }
+.instalar .passos { text-align: left; }
+.instalar-acoes { padding: 16px 16px 0; display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.instalar-acoes .link { align-self: center; min-height: 44px; }

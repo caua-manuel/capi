@@ -8,6 +8,7 @@ import type {
 } from '../dominio/onboarding';
 import type { Centavos } from '../motor/dinheiro';
 import { formatarReais, hoje } from './formato';
+import { navegar } from './rotas';
 
 interface Props {
   /** Respostas já salvas, para editar. */
@@ -187,6 +188,7 @@ export function Onboarding({ inicial, categorias, salarioMinimo, onConcluir, onS
             Começar
             <span className="seta"><Icone nome="seta" tamanho={18} traco={2} /></span>
           </button>
+          <button type="button" className="link" style={{ marginTop: 8 }} onClick={() => navegar('backup')}>Já tenho um backup: importar</button>
         </div>
       </main>
     );
