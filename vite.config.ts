@@ -3,8 +3,12 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-// No GitHub Pages o app fica em /capi/.
-const base = process.env.GITHUB_PAGES ? '/capi/' : '/';
+// Base do app: "/" no computador e "/capi/" no GitHub Pages (o workflow define VITE_BASE_PATH).
+function resolverBase(valor: string | undefined): string {
+  const limpo = (valor ?? '').trim().replace(/^\/+|\/+$/g, '');
+  return limpo ? `/${limpo}/` : '/';
+}
+const base = resolverBase(process.env.VITE_BASE_PATH);
 
 export default defineConfig({
   base,
