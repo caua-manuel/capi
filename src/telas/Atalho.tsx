@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Cabecalho, Folha } from '../componentes/Cabecalho';
 import { Icone } from '../componentes/Icone';
+import { NotificacoesDoAtalho } from './NotificacoesDoAtalho';
 import { enderecoCompleto, navegar } from './rotas';
 
 const PASSOS: { titulo: string; texto: string; dica?: string }[] = [
@@ -42,6 +43,7 @@ export function Atalho() {
     <main className="tela tela-detalhe">
       <Cabecalho linha1="Atalho do Apple Pay" linha2="passo a passo" onVoltar={() => navegar('ajustes')} />
       <Folha>
+        <NotificacoesDoAtalho />
         <p className="texto-2" style={{ margin: '0 4px 16px' }}>
           Uma automação do app Atalhos abre o Capi sempre que você paga por aproximação. Leva uns 3 minutos e não precisa saber programar.
         </p>

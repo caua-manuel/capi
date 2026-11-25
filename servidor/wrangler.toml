@@ -1,0 +1,19 @@
+name = "capi-ponte-apple-pay"
+main = "src/worker.ts"
+compatibility_date = "2026-11-25"
+workers_dev = true
+preview_urls = false
+send_metrics = false
+
+[observability]
+enabled = false
+
+[observability.logs]
+enabled = false
+invocation_logs = false
+
+[observability.traces]
+enabled = false
+
+[[kv_namespaces]]
+binding = "INSCRICOES"

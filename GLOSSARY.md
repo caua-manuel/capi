@@ -50,6 +50,12 @@ _Evitar_: tag, etiqueta
 O estabelecimento de um Lançamento (iFood, Uber). Nunca é uma Categoria.
 _Evitar_: merchant, comerciante
 
+**Código do aparelho**:
+O segredo aleatório criado no Capi instalado para autorizar as chamadas à ponte do Atalho do Apple Pay. Só o aparelho guarda o código. A ponte identifica a inscrição de push pelo hash SHA-256.
+
+**Pendente**:
+Um pagamento que a ponte do Atalho do Apple Pay guarda até o Capi ler. Expira em 48 horas se ninguém ler e só vira Lançamento quando o Usuário confirma a Categoria.
+
 **Grupo**:
 Um dos três baldes da regra 50-30-20: Essencial, Estilo de vida, Guardar/quitar.
 _Evitar_: tipo, macro-categoria
