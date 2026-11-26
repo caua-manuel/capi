@@ -4,6 +4,7 @@ import type { Fixo } from '../dominio/fixo';
 import type { Meta } from '../dominio/meta';
 import type { Fatura } from '../dominio/fatura';
 import type { Lancamento } from '../dominio/lancamento';
+import type { PendenteDoAtalho } from '../dominio/pendente';
 
 // O Repositório é a única parte do app que lê e grava dados (IndexedDB, ADR 0002).
 
@@ -40,10 +41,20 @@ export interface EsquemaCapi extends DBSchema {
     key: string;
     value: Fatura;
   };
+  pendentes: {
+    key: string;
+    value: PendenteDoAtalho & { ordem: number };
+    indexes: { 'por-ordem': number };
+  };
+  pendentesResolvidos: {
+    key: string;
+    value: { id: string; expirarEm: number };
+    indexes: { 'por-expiracao': number };
+  };
 }
 
 export const NOME_DO_BANCO = 'capi';
-export const VERSAO_DO_BANCO = 6;
+export const VERSAO_DO_BANCO = 7;
 
 let bancoAberto: Promise<IDBPDatabase<EsquemaCapi>> | null = null;
 
@@ -72,7 +83,16 @@ export function abrirBanco(): Promise<IDBPDatabase<EsquemaCapi>> {
       if (versaoAntiga < 6) {
         db.createObjectStore('faturas', { keyPath: 'id' });
       }
+      if (versaoAntiga < 7) {
+        const pendentes = db.createObjectStore('pendentes', { keyPath: 'id' });
+        pendentes.createIndex('por-ordem', 'ordem');
+        const resolvidos = db.createObjectStore('pendentesResolvidos', { keyPath: 'id' });
+        resolvidos.createIndex('por-expiracao', 'expirarEm');
+      }
     },
+  }).catch((erro: unknown) => {
+    bancoAberto = null;
+    throw erro;
   });
   return bancoAberto;
 }

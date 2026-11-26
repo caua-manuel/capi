@@ -54,7 +54,7 @@ _Evitar_: merchant, comerciante
 O segredo aleatório criado no Capi instalado para autorizar as chamadas à ponte do Atalho do Apple Pay. Só o aparelho guarda o código. A ponte identifica a inscrição de push pelo hash SHA-256.
 
 **Pendente**:
-Um pagamento que a ponte do Atalho do Apple Pay guarda até o Capi ler. Expira em 48 horas se ninguém ler e só vira Lançamento quando o Usuário confirma a Categoria.
+Um pagamento que a ponte do Atalho do Apple Pay guarda por até 48 horas, até o Capi confirmar a gravação no aparelho. No Capi, fica na fila até o Usuário confirmar a Categoria e salvar o Lançamento ou tocar em Descartar.
 
 **Grupo**:
 Um dos três baldes da regra 50-30-20: Essencial, Estilo de vida, Guardar/quitar.

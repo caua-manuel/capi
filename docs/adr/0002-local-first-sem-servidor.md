@@ -2,9 +2,9 @@
 
 O Plano e o histórico financeiro ficam no banco do navegador (IndexedDB) do aparelho. O app é um PWA estático, hospedado no GitHub Pages com React, TypeScript e Vite. A proteção contra perda é um backup manual em arquivo. O app funciona sem login.
 
-O Atalho do Apple Pay tem uma ponte opcional em Cloudflare Workers e KV no plano grátis. A prova usa apenas Web Push de teste. O KV guarda o endereço e as duas chaves exigidas pelo Web Push em uma única inscrição, cuja chave é o hash SHA-256 do Código do aparelho. O Worker opera com a observabilidade desativada e sem registros de IP, user-agent ou data de acesso no KV ou em logs.
+O Atalho do Apple Pay tem uma ponte opcional em Cloudflare Workers e KV no plano grátis. O KV guarda o endereço e as duas chaves exigidas pelo Web Push em uma única inscrição, cuja chave é o hash SHA-256 do Código do aparelho. O Worker opera com a observabilidade desativada e sem registros de IP, user-agent ou data de acesso no KV ou em logs.
 
-Com a prova confirmada, a ponte poderá receber o valor e a Loja de cada pagamento como um Pendente. A leitura apaga o Pendente e o KV expira Pendentes não lidos em até 48 horas. O Plano, os saldos, as Metas, as Categorias e o histórico permanecem no aparelho.
+A ponte recebe o valor e a Loja de cada pagamento como um Pendente. O Capi confirma a entrega após gravar o Pendente no IndexedDB. A confirmação retira o Pendente da fila da ponte e apaga seu registro. O KV expira Pendentes sem confirmação em até 48 horas. Um Durable Object SQLite por hash coordena entregas, revogação e limite de chamadas. Ele guarda referências de expiração e contadores temporários. Após desligar, só fica na ponte a marca de revogação que impede a reutilização do código antigo. No aparelho, o Pendente fica disponível offline até virar Lançamento ou ser descartado. Um identificador temporário impede que a mesma entrega reabra um Pendente resolvido. O Plano, os saldos, as Metas, as Categorias e o histórico permanecem no aparelho.
 
 ## Consequências
 - Os Avisos aparecem quando o app é aberto. Os Lembretes de horário usam as automações locais do Atalhos do iOS. O Web Push fica restrito à ponte do Atalho do Apple Pay (ver ADR 0003).

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { criarCategoriaPropria, montarCategorias, type Categoria, type Grupo } from './dominio/categorias';
 import { apagarCategoriaPropria, gravarEscondidas, lerEscondidas, listarCategoriasProprias, salvarCategoriaPropria } from './repositorio/categorias';
 import { Categorias } from './telas/Categorias';
@@ -7,6 +7,9 @@ import { gravarAjuste, lerAjuste } from './repositorio/ajustes';
 import type { Lancamento } from './dominio/lancamento';
 import type { RegrasDeEstabelecimento } from './leitor/leitor';
 import { lerUrlDeEntrada } from './leitor/url';
+import { buscarPendentesDoAtalho, lerCodigoDoAparelho, ouvirMudancasDoCodigo } from './leitor/pushDoAtalho';
+import type { PendenteDoAtalho } from './dominio/pendente';
+import { descartarPendenteDoAtalho, listarPendentesDoAtalho, salvarPendenteComoLancamento } from './repositorio/pendentes';
 import { apagarComSeguintes, listarLancamentosDesde, listarLancamentosDoMes, restaurarLancamentos, salvarLancamento } from './repositorio/lancamentos';
 import { AvisoDeDesfazer } from './componentes/AvisoDeDesfazer';
 import type { RespostasDoOnboarding } from './dominio/onboarding';
@@ -79,6 +82,20 @@ export function App() {
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
   const [regras, setRegras] = useState<RegrasDeEstabelecimento>({});
   const [folha, setFolha] = useState<Folha>(folhaDaUrl);
+  const [pendentesDoAtalho, setPendentesDoAtalho] = useState<PendenteDoAtalho[]>([]);
+  const leituraDaFila = useRef(0);
+  const relerPendentes = useCallback(async () => {
+    const leitura = ++leituraDaFila.current;
+    const fila = await listarPendentesDoAtalho();
+    if (leitura === leituraDaFila.current) setPendentesDoAtalho(fila);
+  }, []);
+  const pendenteAberto = folha ? undefined : pendentesDoAtalho[0];
+  const folhaAberta: Folha = folha ?? (pendenteAberto ? {
+    tipo: 'novo', preenchimento: {
+      origem: 'applepay', pendente: pendenteAberto,
+      texto: `${centavosParaTexto(pendenteAberto.valor)} ${pendenteAberto.loja}`,
+    },
+  } : null);
   const [proprias, setProprias] = useState<Categoria[]>([]);
   const [escondidas, setEscondidas] = useState<string[]>([]);
   const { todas, visiveis } = useMemo(() => montarCategorias(proprias, escondidas), [proprias, escondidas]);
@@ -124,6 +141,44 @@ export function App() {
     window.addEventListener('popstate', aoNavegar);
     return () => window.removeEventListener('popstate', aoNavegar);
   }, []);
+
+  useEffect(() => {
+    const { standaloneDoIOS, modoDeExibicaoStandalone } = lerAmbiente();
+    if (!standaloneDoIOS && !modoDeExibicaoStandalone) return;
+
+    let ultimaBusca: Promise<void> | undefined;
+    const reler = () => { void relerPendentes().catch(() => {}); };
+    let ativo = true;
+    const buscar = () => {
+      if (document.visibilityState === 'hidden') return;
+      reler();
+      const codigo = lerCodigoDoAparelho();
+      if (!codigo || !navigator.onLine) return;
+      const busca = buscarPendentesDoAtalho(codigo);
+      if (busca === ultimaBusca) return;
+      ultimaBusca = busca;
+      void busca.then(() => { if (ativo) reler(); })
+        .catch(() => { /* A próxima abertura ou volta da rede tenta de novo. */ });
+    };
+    const aoTocarNaNotificacao = (evento: MessageEvent) => {
+      if (evento.data?.tipo === 'buscar-pendentes-do-atalho') buscar();
+    };
+    const pararDeOuvir = ouvirMudancasDoCodigo(buscar);
+    window.addEventListener('focus', buscar);
+    window.addEventListener('online', buscar);
+    document.addEventListener('visibilitychange', buscar);
+    navigator.serviceWorker?.addEventListener('message', aoTocarNaNotificacao);
+    buscar();
+    return () => {
+      ativo = false;
+      leituraDaFila.current++;
+      pararDeOuvir();
+      window.removeEventListener('focus', buscar);
+      window.removeEventListener('online', buscar);
+      document.removeEventListener('visibilitychange', buscar);
+      navigator.serviceWorker?.removeEventListener('message', aoTocarNaNotificacao);
+    };
+  }, [relerPendentes]);
 
   // Nulo enquanto carrega; indefinido quando ainda não respondeu.
   const [onboarding, setOnboarding] = useState<RespostasDoOnboarding | undefined | null>(null);
@@ -313,10 +368,15 @@ export function App() {
   useEffect(() => { void recarregar(); }, [recarregar]);
 
   async function salvar(lancamento: Lancamento, demais: Lancamento[] = []) {
-    await salvarLancamento(lancamento);
-    for (const parcela of demais) await salvarLancamento(parcela);
-    // A Categoria escolhida para a Loja vira Regra de estabelecimento.
-    await gravarRegra(lancamento.loja, lancamento.categoriaId);
+    if (pendenteAberto) {
+      await salvarPendenteComoLancamento(pendenteAberto.id, lancamento, demais);
+      await relerPendentes();
+    } else {
+      await salvarLancamento(lancamento);
+      for (const parcela of demais) await salvarLancamento(parcela);
+      // A Categoria escolhida para a Loja vira Regra de estabelecimento.
+      await gravarRegra(lancamento.loja, lancamento.categoriaId);
+    }
     setFolha(null);
     await recarregar();
   }
@@ -337,6 +397,7 @@ export function App() {
   }
   const expirarDesfazer = useCallback(() => setApagados(null), []);
 
+  const idDoPendenteAberto = pendenteAberto?.id;
   const fechar = useCallback(() => setFolha(null), []);
 
   // Instalar antes de começar (ADR 0002): no Safari do iPhone os dados não passam para o app instalado.
@@ -448,12 +509,17 @@ export function App() {
           onLancar={() => setFolha({ tipo: 'novo' })} onEditar={(l) => setFolha({ tipo: 'editar', lancamento: l })} />
       )}
       {ehAba(rota) && <BarraDeBaixo ativa={rota} onLancar={() => setFolha({ tipo: 'novo' })} />}
-      {apagados && !folha && <AvisoDeDesfazer chave={apagados.chave} onDesfazer={() => void desfazerApagar()} onExpirar={expirarDesfazer} />}
-      {folha && (
-        <NovoGasto plano={saida?.plano ?? null} key={folha.tipo === 'editar' ? folha.lancamento.id : 'novo'} categorias={visiveis} regras={regras}
+      {apagados && !folhaAberta && <AvisoDeDesfazer chave={apagados.chave} onDesfazer={() => void desfazerApagar()} onExpirar={expirarDesfazer} />}
+      {folhaAberta && (
+        <NovoGasto plano={saida?.plano ?? null} key={folhaAberta.tipo === 'editar' ? folhaAberta.lancamento.id : (idDoPendenteAberto ?? 'novo')} categorias={visiveis} regras={regras}
           onCriarCategoria={criarCategoria}
-          editando={folha.tipo === 'editar' ? folha.lancamento : undefined}
-          preenchimento={folha.tipo === 'novo' ? folha.preenchimento : undefined}
+          editando={folhaAberta.tipo === 'editar' ? folhaAberta.lancamento : undefined}
+          preenchimento={folhaAberta.tipo === 'novo' ? folhaAberta.preenchimento : undefined}
+          outrosPendentes={pendenteAberto ? pendentesDoAtalho.length - 1 : 0}
+          onDescartar={pendenteAberto ? async () => {
+            await descartarPendenteDoAtalho(pendenteAberto.id);
+            await relerPendentes();
+          } : undefined}
           onSalvar={salvar} onApagar={apagar} onFechar={fechar} />
       )}
     </ProvedorDiscreto>

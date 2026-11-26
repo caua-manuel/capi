@@ -15,5 +15,24 @@ invocation_logs = false
 [observability.traces]
 enabled = false
 
+[observability.issues]
+enabled = false
+
 [[kv_namespaces]]
 binding = "INSCRICOES"
+
+[[kv_namespaces]]
+binding = "PENDENTES"
+
+[[durable_objects.bindings]]
+name = "COORDENACAO"
+class_name = "CoordenacaoDoAtalho"
+
+[[migrations]]
+tag = "fila-apple-pay-v1"
+new_sqlite_classes = ["CoordenacaoDoAtalho"]
+
+[[ratelimits]]
+name = "LIMITE_POR_ROTA"
+namespace_id = "682025"
+simple = { limit = 120, period = 60 }
