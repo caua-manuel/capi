@@ -68,14 +68,14 @@ export async function hashDoCodigo(codigo: string): Promise<string> {
 function valorEmCentavos(dado: unknown): number | null {
   if (typeof dado !== 'string' && typeof dado !== 'number') return null;
   const bruto = String(dado);
-  if (bruto.length > 30) return null;
-  let texto = bruto.trim().replace(/^R\$\s*/i, '');
-  if (typeof dado === 'string' && /^\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?$/.test(texto)) {
-    texto = texto.replace(/\./g, '');
-  }
-  if (!/^\d+(?:[.,]\d{1,2})?$/.test(texto)) return null;
-  const [inteiro, fracao = ''] = texto.split(/[.,]/);
-  const valor = Number(inteiro) * 100 + Number(fracao.padEnd(2, '0'));
+  if (/[-−]/.test(bruto) || /^\s*\([^)]*\)\s*$/.test(bruto)) return null;
+  if (typeof dado === 'number' && !/^\d+(?:\.\d{1,2})?$/.test(bruto)) return null;
+
+  const texto = bruto.replace(/[^\d.,]/g, '');
+  const decimal = /[.,](\d{1,2})$/.exec(texto);
+  const inteiro = texto.slice(0, decimal?.index ?? texto.length).replace(/[.,]/g, '');
+  const fracao = decimal?.[1] ?? '';
+  const valor = Number(inteiro + fracao.padEnd(2, '0'));
   return Number.isSafeInteger(valor) && valor > 0 ? valor : null;
 }
 

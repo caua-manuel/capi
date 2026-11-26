@@ -137,8 +137,11 @@ it('rejeita origens externas e exige Bearer válido na automação nativa', asyn
   expect(outraOrigem.status).toBe(403);
   expect(outraOrigem.headers.has('Access-Control-Allow-Origin')).toBe(false);
   expect((await pagar(codigo, pagamento, 'null')).status).toBe(403);
-  expect((await pagar('', pagamento)).status).toBe(401);
-  expect((await pagar(novoCodigo(), pagamento)).status).toBe(401);
+  for (const invalido of ['', novoCodigo()]) {
+    const resposta = await pagar(invalido, pagamento);
+    expect(resposta.status).toBe(401);
+    expect(await resposta.text()).toBe('Código inválido. Gere um novo no Capi');
+  }
   expect((await pendentes(novoCodigo())).status).toBe(401);
   expect((await pendentes(codigo, 'https://example.org')).status).toBe(403);
   const preflight = await simulador.dispatchFetch(`${URL_DA_PONTE}/pendentes`, {
@@ -149,13 +152,44 @@ it('rejeita origens externas e exige Bearer válido na automação nativa', asyn
   expect(preflight.headers.get('Access-Control-Allow-Headers')).toContain('Authorization');
 });
 
-it('valida os limites de Quantia e Loja e recusa valor negativo ou impreciso', async () => {
+it('aceita os formatos de Valor do Atalhos e entrega os Pendentes com a quantia correta', async () => {
   const codigo = await inscrever();
-  for (const valor of ['-1,00', 2.005, '9'.repeat(31), 'nove 7', 0]) {
-    expect((await pagar(codigo, { valor, loja: 'Mercado' })).status).toBe(400);
+  enviarPush.mockResolvedValue(new RespostaDoSimulador(null, { status: 201 }));
+  const formatos = [
+    ['R$ 12,50', '12,50'],
+    ['R$12,50', '12,50'],
+    ['12,50 R$', '12,50'],
+    ['BRL 12,50', '12,50'],
+    ['12.50', '12,50'],
+    ['1.234,56', '1234,56'],
+    ['R$\u00a012,50', '12,50'],
+    ['12,50\u202fR$', '12,50'],
+    ['1 234,56', '1234,56'],
+    ['1,234.5', '1234,50'],
+    ['1.234', '1234,00'],
+  ];
+  for (const [valor] of formatos) {
+    const resposta = await pagar(codigo, { valor, loja: 'Mercado' });
+    expect(resposta.status, valor).toBe(202);
+    expect(resposta.headers.get('Content-Type')).toMatch(/^text\/plain\b/);
+    expect(await resposta.text()).toBe('Enviado ao Capi');
+  }
+  expect(await (await pendentes(codigo)).json()).toEqual(
+    formatos.map(([, valor]) => ({ id: expect.any(String), valor, loja: 'Mercado' })),
+  );
+});
+
+it('recusa Valor inválido ou Loja inválida e mostra até 30 caracteres do Valor recebido', async () => {
+  const codigo = await inscrever();
+  for (const valor of ['Valor', '', 'R$ -1,00', '−12,50', -1, 2.005, '9'.repeat(31), 0]) {
+    const resposta = await pagar(codigo, { valor, loja: 'Mercado' });
+    expect(resposta.status).toBe(400);
+    expect(await resposta.text()).toBe(`Valor ou loja inválidos: recebi valor=${String(valor).slice(0, 30)}`);
   }
   expect((await pagar(codigo, { valor: '1,00', loja: 'a'.repeat(61) })).status).toBe(400);
-  expect((await pagar(codigo, { valor: '1,00', loja: '  ' })).status).toBe(400);
+  const semLoja = await pagar(codigo, { valor: '12,50 R$', loja: '  ' });
+  expect(semLoja.status).toBe(400);
+  expect(await semLoja.text()).toBe('Valor ou loja inválidos: recebi valor=12,50 R$');
   expect(await (await pendentes(codigo)).json()).toEqual([]);
 });
 
