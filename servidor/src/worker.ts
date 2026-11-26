@@ -8,6 +8,7 @@ const ROTAS = new Map([
   ['/inscrever', 'POST'], ['/teste', 'POST'], ['/pagamento', 'POST'], ['/pendentes', 'GET'], ['/desligar', 'POST'],
   ['/pendentes/entrega', 'GET'], ['/pendentes/confirmar', 'POST'],
 ]);
+const CODIGO_INVALIDO = 'Código inválido. Gere um novo no Capi';
 
 async function enviarPush(env: Ambiente, inscricao: Inscricao, data: string | { id: string; texto: string }): Promise<number> {
   const { publicKey, privateKey } = JSON.parse(env.VAPID) as VapidKeys;
@@ -28,7 +29,8 @@ export default {
     const origemDoApp = origem === ORIGEM_DO_APP;
     const headers = new Headers({ 'Cache-Control': 'no-store', Vary: 'Origin' });
     if (origemDoApp) headers.set('Access-Control-Allow-Origin', ORIGEM_DO_APP);
-    const responder = (status: number) => new Response(null, { status, headers });
+    const responder = (status: number, corpo: string | null = null) => new Response(corpo, { status, headers });
+    const pagamentoDoAtalhos = pathname === '/pagamento';
 
     // A automação nativa do Atalhos usa Bearer e envia a requisição sem Origin.
     if (!origemDoApp && !(pathname === '/pagamento' && origem === null && request.method === 'POST')) return responder(403);
@@ -74,11 +76,16 @@ export default {
         }
       } else {
         const bearer = /^Bearer (\S+)$/i.exec(request.headers.get('Authorization') ?? '')?.[1];
-        if (!codigoValido(bearer)) return responder(401);
+        if (!codigoValido(bearer)) return responder(401, pagamentoDoAtalhos ? CODIGO_INVALIDO : null);
         codigo = bearer;
-        if (pathname === '/pagamento') {
-          const pagamento = lerPagamento(await lerCorpo(request));
-          if (!pagamento) return responder(400);
+        if (pagamentoDoAtalhos) {
+          const corpo = await lerCorpo(request);
+          const pagamento = lerPagamento(corpo);
+          if (!pagamento) {
+            const valor = objeto(corpo) ? corpo.valor : undefined;
+            const recebido = typeof valor === 'string' ? valor : JSON.stringify(valor) ?? '';
+            return responder(400, `Valor ou loja inválidos: recebi valor=${recebido.slice(0, 30)}`);
+          }
           acao = { tipo: 'pagamento', pagamento };
         } else if (pathname === '/pendentes/confirmar') {
           const ids = await lerCorpo(request, 8192);
@@ -100,7 +107,9 @@ export default {
         const { valor, loja } = acao.pagamento;
         const texto = `R$ ${centavosParaTexto(valor, true)} · ${loja} — toque para categorizar`;
         ctx.waitUntil(enviarPush(env, resultado.inscricao, { id: resultado.id, texto }).catch(() => {}));
+        return responder(202, 'Enviado ao Capi');
       }
+      if (resultado.status === 401 && acao.tipo === 'pagamento') return responder(401, CODIGO_INVALIDO);
       if (resultado.status === 204 && resultado.inscricao) {
         return responder(await enviarPush(env, resultado.inscricao, 'Funcionou! Toque para abrir o Capi'));
       }
