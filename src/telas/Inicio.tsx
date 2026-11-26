@@ -11,6 +11,7 @@ import { ListaDeAvisos } from '../componentes/Avisos';
 import { Valor, useModoDiscreto } from './discreto';
 import { hoje, nomeDoMes, rotuloDaData, saudacao, semanaDoMes } from './formato';
 import type { CapiDoDia } from '../motor/capiDoDia';
+import type { AtualizacaoDoCapi } from '../atualizacaoDoCapi';
 
 interface Props {
   mes: string;
@@ -20,6 +21,7 @@ interface Props {
   onEditar: (lancamento: Lancamento) => void;
   onLancar: () => void;
   onAlternarDiscreto: () => void;
+  atualizacao: AtualizacaoDoCapi | null;
   /** Ainda não respondeu o Onboarding. */
   semPlano: boolean;
   onMontarPlano: () => void;
@@ -95,7 +97,7 @@ function Atalho({ icone, rotulo, azul, onClick, aria }: { icone: NomeDoIcone; ro
   );
 }
 
-export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAlternarDiscreto, semPlano, onMontarPlano, plano, metas, onMetas, previsao, onFatura, avisos, comprasParaLembrar, onResolverCompra, onPossoComprar, onCalendario, onFecharMes, onCheckin, capi, onCapi }: Props) {
+export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAlternarDiscreto, atualizacao, semPlano, onMontarPlano, plano, metas, onMetas, previsao, onFatura, avisos, comprasParaLembrar, onResolverCompra, onPossoComprar, onCalendario, onFecharMes, onCheckin, capi, onCapi }: Props) {
   const discreto = useModoDiscreto();
   const total = lancamentos.reduce((soma, l) => soma + l.valor, 0);
   const nomeDaCategoria = (id: string) => categorias.find((c) => c.id === id)?.nome ?? 'Outros';
@@ -130,6 +132,14 @@ export function Inicio({ mes, lancamentos, categorias, onLancar, onEditar, onAlt
           </button>
         </div>
       </header>
+
+      {atualizacao && (
+        <button type="button" className="cartao botao-atualizar-capi" onClick={atualizacao.aplicar}
+          disabled={atualizacao.aplicando} aria-busy={atualizacao.aplicando}>
+          <Icone nome="repetir" tamanho={18} />
+          <span role="status">{atualizacao.aplicando ? 'Atualizando…' : 'Atualizar Capi'}</span>
+        </button>
+      )}
 
       <div className="saudacao">
         <div className="saudacao-texto">

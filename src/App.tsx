@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { acompanharAtualizacao, type AtualizacaoDoCapi } from './atualizacaoDoCapi';
 import { criarCategoriaPropria, montarCategorias, type Categoria, type Grupo } from './dominio/categorias';
 import { apagarCategoriaPropria, gravarEscondidas, lerEscondidas, listarCategoriasProprias, salvarCategoriaPropria } from './repositorio/categorias';
 import { Categorias } from './telas/Categorias';
@@ -78,6 +79,8 @@ function folhaDaUrl(): Folha {
 
 export function App() {
   const mes = mesDe(hoje());
+  const [atualizacao, setAtualizacao] = useState<AtualizacaoDoCapi | null>(null);
+  useEffect(() => acompanharAtualizacao(setAtualizacao), []);
   const [rota, setRota] = useState<Rota>(() => (rotaAtual() === 'lancar' ? 'inicio' : rotaAtual()));
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
   const [regras, setRegras] = useState<RegrasDeEstabelecimento>({});
@@ -502,6 +505,7 @@ export function App() {
       )}
       {(rota === 'inicio' || rota === 'lancar') && (
         <Inicio mes={mes} lancamentos={lancamentos} categorias={todas} onAlternarDiscreto={alternarDiscreto}
+          atualizacao={folhaAberta ? null : atualizacao}
           semPlano={onboarding === undefined} onMontarPlano={() => navegar('onboarding')}
           plano={saida?.plano ?? null} metas={metasNaHome} onMetas={() => navegar('metas')}
           previsao={saida?.previsao ?? null} onFatura={() => navegar('fatura')} avisos={saida?.avisos ?? []}
