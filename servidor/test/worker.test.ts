@@ -44,8 +44,8 @@ function pagar(codigo: string, corpo: unknown, origin?: string) {
   });
 }
 
-function pendentes(codigo: string, origin = ORIGEM) {
-  return simulador.dispatchFetch(`${URL_DA_PONTE}/pendentes`, { headers: { Origin: origin, Authorization: `Bearer ${codigo}` } });
+function pendentes(codigo: string, origin = ORIGEM, rota = '/pendentes') {
+  return simulador.dispatchFetch(`${URL_DA_PONTE}${rota}`, { headers: { Origin: origin, Authorization: `Bearer ${codigo}` } });
 }
 
 function desligar(codigo: string) {
@@ -203,6 +203,30 @@ it('aceita o pagamento e preserva o Pendente quando o push falha', async () => {
   expect((await pagar(codigo, { valor: '42,50', loja: 'Padaria' })).status).toBe(202);
   await expect.poll(() => enviarPush.mock.calls.length).toBe(1);
   expect(await (await pendentes(codigo)).json()).toEqual([{ id: expect.any(String), valor: '42,50', loja: 'Padaria' }]);
+});
+
+it('reentrega pagamentos até a confirmação e remove só os ids confirmados do Código do aparelho', async () => {
+  const codigo = await inscrever();
+  const outro = await inscrever();
+  enviarPush.mockImplementation(async () => new RespostaDoSimulador(null, { status: 201 }));
+  expect((await pagar(codigo, { valor: '5,00', loja: 'Padaria' })).status).toBe(202);
+  expect((await pagar(codigo, { valor: '16,00', loja: 'Mercado' })).status).toBe(202);
+  const entregar = () => pendentes(codigo, ORIGEM, '/pendentes/entrega');
+  const confirmar = (codigoDoAparelho: string, id: string) => simulador.dispatchFetch(`${URL_DA_PONTE}/pendentes/confirmar`, {
+    method: 'POST',
+    headers: { Origin: ORIGEM, Authorization: `Bearer ${codigoDoAparelho}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify([id]),
+  });
+  const fila = await (await entregar()).json() as { id: string; loja: string }[];
+  expect(fila.map(({ loja }) => loja)).toEqual(['Padaria', 'Mercado']);
+  expect((await confirmar(outro, fila[0].id)).status).toBe(204);
+  expect(await (await entregar()).json()).toEqual(fila);
+  expect((await confirmar(codigo, fila[0].id)).status).toBe(204);
+  expect((await confirmar(codigo, fila[0].id)).status).toBe(204);
+  expect(await (await entregar()).json()).toEqual([fila[1]]);
+  const kv = await simulador.getKVNamespace('PENDENTES');
+  expect((await kv.list({ prefix: `${hashDoTeste(codigo)}:` })).keys.map(({ name }) => name))
+    .toEqual([`${hashDoTeste(codigo)}:${fila[1].id}`]);
 });
 
 it('revoga o Código do aparelho e apaga inscrição e Pendentes sem afetar outro código', async () => {

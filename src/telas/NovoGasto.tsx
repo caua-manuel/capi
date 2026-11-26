@@ -4,7 +4,7 @@ import { FormNovaCategoria } from '../componentes/FormNovaCategoria';
 import { normalizar } from '../leitor/normalizar';
 import type { Lancamento, OrigemDoLancamento } from '../dominio/lancamento';
 import { lerLancamento, sugerirCategoria, type LeituraDeLancamento, type RegrasDeEstabelecimento } from '../leitor/leitor';
-import type { PendenteDoAtalho } from '../leitor/pushDoAtalho';
+import type { PendenteDoAtalho } from '../dominio/pendente';
 import { Icone } from '../componentes/Icone';
 import { Valor, useModoDiscreto } from './discreto';
 import { centavosParaTexto, hoje, mesDe, rotuloDaData } from './formato';
@@ -30,12 +30,13 @@ interface Props {
   /** `demais` são as Parcelas 2 em diante, quando a compra é parcelada. */
   onSalvar: (lancamento: Lancamento, demais?: Lancamento[]) => Promise<void>;
   onApagar?: (id: string) => Promise<void>;
+  onDescartar?: () => Promise<void>;
   onFechar: () => void;
   /** Cria a Categoria ali mesmo, sem sair do lançamento, e devolve o id dela. */
   onCriarCategoria: (nome: string, grupo: Grupo) => Promise<string>;
 }
 
-export function NovoGasto({ plano, categorias, regras, editando, preenchimento, outrosPendentes = 0, onSalvar, onApagar, onFechar, onCriarCategoria }: Props) {
+export function NovoGasto({ plano, categorias, regras, editando, preenchimento, outrosPendentes = 0, onSalvar, onApagar, onDescartar, onFechar, onCriarCategoria }: Props) {
   const [criandoCategoria, setCriandoCategoria] = useState(false);
   const discreto = useModoDiscreto();
   const [focado, setFocado] = useState(false);
@@ -45,6 +46,7 @@ export function NovoGasto({ plano, categorias, regras, editando, preenchimento, 
   const [categoriaEscolhida, setCategoriaEscolhida] = useState<string | null>(editando?.categoriaId ?? null);
   const [data, setData] = useState(editando?.data ?? hoje());
   const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState('');
   const campo = useRef<HTMLInputElement>(null);
   const origem: OrigemDoLancamento = editando?.origem ?? preenchimento?.origem ?? 'manual';
 
@@ -69,14 +71,17 @@ export function NovoGasto({ plano, categorias, regras, editando, preenchimento, 
 
   useEffect(() => {
     if (!editando && !preenchimento) campo.current?.focus();
+  }, [editando, preenchimento]);
+
+  useEffect(() => {
+    if (preenchimento?.pendente || salvando) return;
     const fecharNoEsc = (e: KeyboardEvent) => e.key === 'Escape' && onFechar();
     window.addEventListener('keydown', fecharNoEsc);
     return () => window.removeEventListener('keydown', fecharNoEsc);
-  }, [editando, preenchimento, onFechar]);
+  }, [preenchimento?.pendente, onFechar, salvando]);
 
   async function salvar() {
     if (!pode || leitura.valor === null || categoriaId === null) return;
-    setSalvando(true);
     const base: Lancamento = {
       id: editando?.id ?? crypto.randomUUID(),
       valor: leitura.valor,
@@ -87,16 +92,31 @@ export function NovoGasto({ plano, categorias, regras, editando, preenchimento, 
       criadoEm: editando?.criadoEm ?? new Date().toISOString(),
     };
     const [primeira, ...demais] = gerarParcelas(base, parcelas, () => crypto.randomUUID());
-    await onSalvar(primeira!, demais);
+    await concluir(() => onSalvar(primeira!, demais), 'Não consegui salvar o gasto. Tente de novo.');
+  }
+
+  async function concluir(acao: () => Promise<void>, mensagemDeErro: string) {
+    if (salvando) return;
+    setErro('');
+    setSalvando(true);
+    try {
+      await acao();
+    } catch {
+      setErro(mensagemDeErro);
+      setSalvando(false);
+    }
   }
 
   return (
-    <div className="folha-fundo" onClick={onFechar}>
+    <div className="folha-fundo" onClick={onDescartar || salvando ? undefined : onFechar}>
       <section className="folha" role="dialog" aria-modal="true" aria-label={editando ? 'Editar gasto' : 'Novo gasto'}
         onClick={(e) => e.stopPropagation()}>
         <div className="folha-alca" />
         <div className="folha-topo">
-          <button type="button" className="link" onClick={onFechar}>Cancelar</button>
+          <button type="button" className="link" disabled={salvando}
+            onClick={onDescartar ? () => void concluir(onDescartar, 'Não consegui descartar o Pendente. Tente de novo.') : onFechar}>
+            {onDescartar ? 'Descartar' : 'Cancelar'}
+          </button>
           <span className="titulo">{editando ? 'Editar gasto' : 'Novo gasto'}</span>
           <span style={{ width: 70 }} />
         </div>
@@ -166,6 +186,7 @@ export function NovoGasto({ plano, categorias, regras, editando, preenchimento, 
           <input type="date" value={data} max={hoje()} onChange={(e) => e.target.value && setData(e.target.value)} />
         </label>
 
+        {erro && <p className="rotulo" role="alert">{erro}</p>}
         <button type="button" className="botao-principal" disabled={!pode} onClick={salvar}>
           {editando ? 'Salvar alterações' : 'Salvar gasto'}
           <span className="seta"><Icone nome="check" tamanho={18} traco={2} /></span>

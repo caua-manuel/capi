@@ -6,6 +6,7 @@ export { CoordenacaoDoAtalho } from './coordenacao';
 
 const ROTAS = new Map([
   ['/inscrever', 'POST'], ['/teste', 'POST'], ['/pagamento', 'POST'], ['/pendentes', 'GET'], ['/desligar', 'POST'],
+  ['/pendentes/entrega', 'GET'], ['/pendentes/confirmar', 'POST'],
 ]);
 
 async function enviarPush(env: Ambiente, inscricao: Inscricao, data: string | { id: string; texto: string }): Promise<number> {
@@ -79,8 +80,15 @@ export default {
           const pagamento = lerPagamento(await lerCorpo(request));
           if (!pagamento) return responder(400);
           acao = { tipo: 'pagamento', pagamento };
+        } else if (pathname === '/pendentes/confirmar') {
+          const ids = await lerCorpo(request, 8192);
+          if (!Array.isArray(ids) || ids.length === 0 || ids.length > 200 || !ids.every((id) =>
+            typeof id === 'string' && /^[0-9a-f-]{36}$/.test(id))) return responder(400);
+          acao = { tipo: 'confirmar', ids };
+        } else if (pathname === '/desligar') {
+          acao = { tipo: 'desligar' };
         } else {
-          acao = { tipo: pathname === '/pendentes' ? 'pendentes' : 'desligar' };
+          acao = { tipo: 'pendentes', apagarNaLeitura: pathname === '/pendentes' };
         }
       }
 

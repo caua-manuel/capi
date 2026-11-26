@@ -23,7 +23,8 @@ interface Estado {
 }
 
 export type Acao = { tipo: 'inscrever'; inscricao: Inscricao } | { tipo: 'pagamento'; pagamento: Pagamento }
-  | { tipo: 'pendentes' | 'teste' | 'desligar' };
+  | { tipo: 'pendentes'; apagarNaLeitura: boolean } | { tipo: 'confirmar'; ids: string[] }
+  | { tipo: 'teste' | 'desligar' };
 
 type Resultado = { status: 200; pendentes: Pendente[] }
   | { status: 202; id: string; inscricao: Inscricao }
@@ -63,7 +64,12 @@ export class CoordenacaoDoAtalho extends DurableObject<Ambiente> {
         case 'pagamento':
           return this.guardar(hash, acao.pagamento, inscricao, estado, agora);
         case 'pendentes':
-          return this.consumir(estado, agora);
+          const pendentes = await this.lerPendentes(estado);
+          if (acao.apagarNaLeitura) await this.confirmarEntrega(estado, pendentes.map(({ id }) => id), agora);
+          return { status: 200, pendentes };
+        case 'confirmar':
+          await this.confirmarEntrega(estado, acao.ids, agora);
+          return { status: 204 };
       }
     });
   }
@@ -126,9 +132,8 @@ export class CoordenacaoDoAtalho extends DurableObject<Ambiente> {
     return { status: 202, id, inscricao };
   }
 
-  private async consumir(estado: Estado, agora: number): Promise<Resultado> {
+  private async lerPendentes(estado: Estado): Promise<Pendente[]> {
     const pendentes: Pendente[] = [];
-    const consumidos = new Set<string>();
     for (let i = 0; i < estado.fila.length; i += 100) {
       const grupo = estado.fila.slice(i, i + 100);
       const dados = await this.env.PENDENTES.get<Pagamento>(grupo.map(({ chave }) => chave), 'json');
@@ -136,20 +141,23 @@ export class CoordenacaoDoAtalho extends DurableObject<Ambiente> {
         const pagamento = dados.get(referencia.chave);
         // Em caso de atraso do KV, preserve a referência para a próxima leitura.
         if (!pagamento || referencia.expira <= Date.now()) continue;
-        consumidos.add(referencia.chave);
-        estado.aExcluir.push(referencia);
         pendentes.push({ id: referencia.id, valor: centavosParaTexto(pagamento.valor), loja: pagamento.loja });
       }
     }
 
-    if (consumidos.size > 0) {
-      estado.fila = estado.fila.filter(({ chave }) => !consumidos.has(chave));
-      // Confirma a retirada de uma vez. O alarme retoma exclusões do KV em caso de falha transitória.
-      await this.gravar(estado, agora);
-      await this.excluirDoKv(estado);
-      await this.gravar(estado, agora);
-    }
-    return { status: 200, pendentes };
+    return pendentes;
+  }
+
+  private async confirmarEntrega(estado: Estado, ids: string[], agora: number): Promise<void> {
+    const confirmados = new Set(ids);
+    const entregues = estado.fila.filter(({ id }) => confirmados.has(id));
+    if (entregues.length === 0) return;
+    estado.fila = estado.fila.filter(({ id }) => !confirmados.has(id));
+    estado.aExcluir.push(...entregues);
+    // Confirma a retirada de uma vez. O alarme retoma exclusões do KV em caso de falha transitória.
+    await this.gravar(estado, agora);
+    await this.excluirDoKv(estado);
+    await this.gravar(estado, agora);
   }
 
   private async desligar(hash: string, estado: Estado, agora: number): Promise<Resultado> {

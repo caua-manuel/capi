@@ -1,12 +1,12 @@
 # Ponte do Atalho do Apple Pay
 
-O Atalhos envia um pagamento com `POST /pagamento` e `Authorization: Bearer <código>`. O Worker guarda o Pendente e responde antes do envio pelo Web Push da Apple. O Capi instalado busca a fila em `GET /pendentes` e pode apagar a inscrição e a fila com `POST /desligar`. As rotas do app aceitam somente a origem do GitHub Pages do Capi. O POST nativo do Atalhos também funciona sem o cabeçalho `Origin`.
+O Atalhos envia um pagamento com `POST /pagamento` e `Authorization: Bearer <código>`. O Worker guarda o Pendente e responde antes do envio pelo Web Push da Apple. O Capi instalado busca a fila em `GET /pendentes/entrega`, grava os Pendentes no IndexedDB e envia a lista de ids em `POST /pendentes/confirmar`. `GET /pendentes` mantém a leitura com exclusão para instalações anteriores. `POST /desligar` apaga a inscrição e a fila da ponte. As rotas do app aceitam somente a origem do GitHub Pages do Capi. O POST nativo do Atalhos também funciona sem o cabeçalho `Origin`.
 
 ## Privacidade
 
 - O KV usa o hash SHA-256 do Código do aparelho como única chave da inscrição. O valor contém apenas o `endpoint` e as chaves `p256dh` e `auth` que o Web Push exige.
 - IP, user-agent, data de acesso e Código do aparelho ficam fora do KV e dos logs do Worker. A observabilidade, os logs de invocação e os traces estão desligados no `wrangler.toml`.
-- Pendentes guardam apenas valor em centavos e Loja. A chave no KV combina o hash do código e um identificador aleatório. Cada registro expira em 48 horas. Uma leitura retira os registros da fila uma única vez e apaga as respectivas chaves. Se o KV falhar na exclusão, um alarme repete a limpeza e o TTL continua valendo.
+- Pendentes guardam apenas valor em centavos e Loja. A chave no KV combina o hash do código e um identificador aleatório. Cada registro expira em 48 horas. A confirmação de entrega retira os ids da fila e apaga as respectivas chaves. Se o KV falhar na exclusão, um alarme repete a limpeza e o TTL continua valendo.
 - Um Durable Object por hash serializa leituras e exclusões. Seu estado temporário contém as referências da fila e um contador por hora. Depois de desligar e apagar os dados, fica apenas uma marca de revogação vinculada ao identificador derivado do hash. Isso impede que o código anterior volte a funcionar. O limite é de 60 chamadas por hora e 200 Pendentes por código. Desligar continua disponível quando o código atinge o limite.
 - A borda limita cada rota a aproximadamente 120 chamadas por minuto por região, usando apenas o nome da rota como chave.
 - Cabeçalho, código, IP, user-agent e dados de pagamento ficam fora dos logs. O valor e a Loja aparecem na notificação recebida no iPhone.

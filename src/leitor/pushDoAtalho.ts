@@ -1,16 +1,12 @@
 import { valorEmCentavos } from './url';
+import type { PendenteDoAtalho } from '../dominio/pendente';
+import { gravarPendentesDoAtalho } from '../repositorio/pendentes';
 
 const CHAVE_DO_CODIGO = 'capi:codigo-do-aparelho';
 const CHAVE_EM_INSCRICAO = 'capi:codigo-em-inscricao';
 const MUDOU_O_CODIGO = 'capi:mudou-o-codigo-do-aparelho';
 const enderecoDaPonte = (import.meta.env.VITE_PONTE_APPLE_PAY_URL ?? '').trim();
 const chavePublica = (import.meta.env.VITE_VAPID_CHAVE_PUBLICA ?? '').trim();
-
-export interface PendenteDoAtalho {
-  id: string;
-  valor: number;
-  loja: string;
-}
 
 export function chavePublicaDoAtalho(): Uint8Array<ArrayBuffer> | null {
   try {
@@ -111,17 +107,33 @@ export function interpretarPendentes(dados: unknown): PendenteDoAtalho[] {
 }
 
 // A inicialização em modo estrito do React e os eventos de foco podem pedir a mesma fila juntos.
-const buscasEmCurso = new Map<string, Promise<PendenteDoAtalho[]>>();
+const buscasEmCurso = new Map<string, Promise<void>>();
+const lotesNaoGravados = new Map<string, PendenteDoAtalho[]>();
 
-export function buscarPendentesDoAtalho(codigo: string): Promise<PendenteDoAtalho[]> {
+export function buscarPendentesDoAtalho(codigo: string): Promise<void> {
   const emCurso = buscasEmCurso.get(codigo);
   if (emCurso) return emCurso;
 
-  const busca = pedir('pendentes', { method: 'GET', headers: { Authorization: `Bearer ${codigo}` } })
-    .then(async (resposta) => {
+  const busca = (async () => {
+    const headers = { Authorization: `Bearer ${codigo}` };
+    let recebidos = lotesNaoGravados.get(codigo);
+    if (!recebidos) {
+      const resposta = await pedir('pendentes/entrega', { method: 'GET', headers });
       if (!resposta.ok) throw new Error('Falha ao buscar Pendentes');
-      return interpretarPendentes(await resposta.json());
-    }).finally(() => buscasEmCurso.delete(codigo));
+      recebidos = interpretarPendentes(await resposta.json());
+      if (recebidos.length === 0) return;
+      lotesNaoGravados.set(codigo, recebidos);
+    }
+    await gravarPendentesDoAtalho(recebidos);
+    lotesNaoGravados.delete(codigo);
+
+    // Se a confirmação falhar, a ponte pode reenviar os mesmos ids na próxima busca.
+    void pedir('pendentes/confirmar', {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify(recebidos.map(({ id }) => id)),
+    }).catch(() => {});
+  })().finally(() => buscasEmCurso.delete(codigo));
   buscasEmCurso.set(codigo, busca);
   return busca;
 }

@@ -26,10 +26,10 @@ export function codigoValido(dado: unknown): dado is string {
   return typeof dado === 'string' && CODIGO_DO_APARELHO.test(dado);
 }
 
-export async function lerCorpo(request: Request): Promise<unknown> {
+export async function lerCorpo(request: Request, limite = TAMANHO_MAXIMO_DO_CORPO): Promise<unknown> {
   if (!request.body || request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase() !== 'application/json') return null;
   const leitor = request.body.getReader();
-  const bytes = new Uint8Array(TAMANHO_MAXIMO_DO_CORPO);
+  const bytes = new Uint8Array(limite);
   let tamanho = 0;
   for (;;) {
     const { done, value } = await leitor.read();
