@@ -36,6 +36,17 @@ it('ignora respostas que não são uma lista de Pendentes', () => {
   expect(interpretarPendentes({ id: 'avulso', valor: '7,00', loja: 'Mercado' })).toEqual([]);
 });
 
+it('usa o endereço público da ponte com a rota de pagamento no guia', async () => {
+  vi.stubEnv('VITE_PONTE_APPLE_PAY_URL', '  https://ponte.example/  ');
+  vi.resetModules();
+  try {
+    const { enderecoDoPagamento } = await import('./pushDoAtalho');
+    expect(enderecoDoPagamento()).toBe('https://ponte.example/pagamento');
+  } finally {
+    vi.unstubAllEnvs();
+  }
+});
+
 it('permite tentar novamente depois de uma busca sem rede', async () => {
   const { buscarPendentesDoAtalho: buscar } = await import('./pushDoAtalho');
   const { listarPendentesDoAtalho: listar } = await import('../repositorio/pendentes');

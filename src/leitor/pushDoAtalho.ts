@@ -8,6 +8,15 @@ const MUDOU_O_CODIGO = 'capi:mudou-o-codigo-do-aparelho';
 const enderecoDaPonte = (import.meta.env.VITE_PONTE_APPLE_PAY_URL ?? '').trim();
 const chavePublica = (import.meta.env.VITE_VAPID_CHAVE_PUBLICA ?? '').trim();
 
+export function enderecoDoPagamento(): string | null {
+  try {
+    const url = new URL('/pagamento', enderecoDaPonte);
+    return url.protocol === 'https:' ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
 export function chavePublicaDoAtalho(): Uint8Array<ArrayBuffer> | null {
   try {
     const endereco = new URL(enderecoDaPonte);
