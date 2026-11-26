@@ -1,6 +1,9 @@
 export type AtualizacaoDoCapi = { aplicar: () => void; aplicando: boolean };
 
-export function acompanharAtualizacao(aoMudar: (atualizacao: AtualizacaoDoCapi | null) => void): () => void {
+export function acompanharAtualizacao(
+  aoMudar: (atualizacao: AtualizacaoDoCapi | null) => void,
+  podeRecarregar: () => boolean,
+): () => void {
   const worker = navigator.serviceWorker;
   if (!worker) return () => {};
 
@@ -19,7 +22,7 @@ export function acompanharAtualizacao(aoMudar: (atualizacao: AtualizacaoDoCapi |
   };
 
   function aplicar() {
-    if (prazo !== undefined) return;
+    if (prazo !== undefined || !podeRecarregar()) return;
     if (versaoMudou()) {
       window.location.reload();
       return;
@@ -47,8 +50,10 @@ export function acompanharAtualizacao(aoMudar: (atualizacao: AtualizacaoDoCapi |
       window.clearTimeout(prazo);
       emAtivacao = null;
       prazo = undefined;
-      window.location.reload();
-      return;
+      if (podeRecarregar()) {
+        window.location.reload();
+        return;
+      }
     }
     versaoDaPagina ??= worker.controller;
     atualizarBotao();
@@ -77,6 +82,7 @@ export function acompanharAtualizacao(aoMudar: (atualizacao: AtualizacaoDoCapi |
   void worker.ready.then((pronto) => {
     if (encerrar) return;
     registro = pronto;
+    versaoDaPagina ??= pronto.active;
     registro.addEventListener('updatefound', observarInstalacao);
     observarInstalacao();
     verificar();

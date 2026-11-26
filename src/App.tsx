@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { acompanharAtualizacao, type AtualizacaoDoCapi } from './atualizacaoDoCapi';
 import { criarCategoriaPropria, montarCategorias, type Categoria, type Grupo } from './dominio/categorias';
 import { apagarCategoriaPropria, gravarEscondidas, lerEscondidas, listarCategoriasProprias, salvarCategoriaPropria } from './repositorio/categorias';
@@ -80,7 +80,8 @@ function folhaDaUrl(): Folha {
 export function App() {
   const mes = mesDe(hoje());
   const [atualizacao, setAtualizacao] = useState<AtualizacaoDoCapi | null>(null);
-  useEffect(() => acompanharAtualizacao(setAtualizacao), []);
+  const podeRecarregar = useRef(false);
+  useEffect(() => acompanharAtualizacao(setAtualizacao, () => podeRecarregar.current), []);
   const [rota, setRota] = useState<Rota>(() => (rotaAtual() === 'lancar' ? 'inicio' : rotaAtual()));
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
   const [regras, setRegras] = useState<RegrasDeEstabelecimento>({});
@@ -99,6 +100,10 @@ export function App() {
       texto: `${centavosParaTexto(pendenteAberto.valor)} ${pendenteAberto.loja}`,
     },
   } : null);
+  const temFolhaAberta = Boolean(folhaAberta);
+  useLayoutEffect(() => {
+    podeRecarregar.current = !temFolhaAberta;
+  }, [temFolhaAberta]);
   const [proprias, setProprias] = useState<Categoria[]>([]);
   const [escondidas, setEscondidas] = useState<string[]>([]);
   const { todas, visiveis } = useMemo(() => montarCategorias(proprias, escondidas), [proprias, escondidas]);
