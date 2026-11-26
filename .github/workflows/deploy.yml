@@ -55,10 +55,31 @@ jobs:
         with:
           path: dist
 
+  verificar-worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Obter código
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Preparar Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: servidor/package-lock.json
+      - name: Instalar dependências do Worker
+        run: npm --prefix servidor ci
+      - name: Testar o Worker
+        run: npm --prefix servidor run test
+      - name: Construir o Worker
+        run: npm --prefix servidor run build
+
   publicar:
     # Trava: só publica com a variável de repositório PUBLICAR_PAGES = 'true'.
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.PUBLICAR_PAGES == 'true'
-    needs: verificar-e-construir
+    needs: [verificar-e-construir, verificar-worker]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
