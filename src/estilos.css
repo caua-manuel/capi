@@ -54,6 +54,11 @@ a { color: var(--bl); text-decoration: none; }
 .texto-2 { color: var(--tx2); }
 
 .cartao { margin: 12px 16px 0; padding: 18px; border-radius: 26px; background: var(--sf); box-shadow: var(--sh); }
+.botao-atualizar-capi {
+  width: calc(100% - 32px); min-height: 44px; padding: 10px 16px; border: 0;
+  display: flex; gap: 8px; align-items: center; justify-content: center;
+  background: var(--blsf); color: var(--bl); font-weight: 600;
+}
 .cartao-destaque {
   margin: 12px 16px 0; padding: 20px 22px; border-radius: 28px; color: #FFFFFF;
   background: linear-gradient(160deg, var(--hero1), var(--hero2)); box-shadow: var(--sh-destaque);

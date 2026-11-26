@@ -5,12 +5,14 @@ import { NavigationRoute, registerRoute } from 'workbox-routing';
 
 declare const self: ServiceWorkerGlobalScope & { __WB_MANIFEST: (string | { url: string; revision: string | null })[] };
 
-// Mantém o precache, a navegação offline e a atualização automática do Worker anterior.
-void self.skipWaiting();
 clientsClaim();
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html')));
+
+self.addEventListener('message', (evento) => {
+  if (evento.data?.type === 'SKIP_WAITING') evento.waitUntil(self.skipWaiting());
+});
 
 self.addEventListener('push', (evento) => {
   const conteudo = evento.data?.text();

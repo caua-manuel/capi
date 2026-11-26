@@ -18,7 +18,7 @@ export default defineConfig({
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.ts',
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['apple-touch-icon.png', 'icone-167.png', 'icone-152.png', 'icone-120.png', 'favicon-32.png', 'capi/*.png'],
       manifest: {
         name: 'Capi: finanças de bolso',

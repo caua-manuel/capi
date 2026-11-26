@@ -11,10 +11,11 @@ const ouvintes = new Map<string, (evento: object) => void>();
 const showNotification = vi.fn();
 const matchAll = vi.fn();
 const openWindow = vi.fn();
+const skipWaiting = vi.fn(async () => {});
 
 beforeAll(async () => {
   vi.stubGlobal('self', {
-    __WB_MANIFEST: [], skipWaiting: vi.fn(),
+    __WB_MANIFEST: [], skipWaiting,
     registration: { scope: escopo, showNotification }, clients: { matchAll, openWindow },
     addEventListener: (tipo: string, ouvinte: (evento: object) => void) => ouvintes.set(tipo, ouvinte),
   });
@@ -29,6 +30,13 @@ async function disparar(tipo: string, evento: object) {
   expect(waitUntil).toHaveBeenCalledOnce();
   await waitUntil.mock.calls[0]?.[0];
 }
+
+it('ativa a atualização quando o app pede e ignora outras mensagens', async () => {
+  ouvintes.get('message')?.({ data: { type: 'outra-mensagem' } });
+  expect(skipWaiting).not.toHaveBeenCalled();
+  await disparar('message', { data: { type: 'SKIP_WAITING' } });
+  expect(skipWaiting).toHaveBeenCalledOnce();
+});
 
 it('mostra a notificação de teste com o ícone dentro do escopo do Capi', async () => {
   const texto = 'Funcionou! Toque para abrir o Capi';
